@@ -3,6 +3,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ImageAttachmentRef } from '@deepseek-ai/dsh-attachment'
+import type { BrowserPage } from 'dsh-browser'
 
 export const name = 'tool-browser'
 export const inject = ['tools', 'browser', 'attachments']
@@ -20,8 +21,8 @@ export function apply(ctx: Context): void {
       schema: {
         type: 'object',
         properties: {
-          url: { type: 'string' },
-          title: { type: 'string' },
+          url: { type: 'string', required: true },
+          title: { type: 'string', required: true },
         },
         additionalProperties: false,
       },
@@ -32,7 +33,7 @@ export function apply(ctx: Context): void {
     },
     timeoutMs: 60_000,
     async execute(args, exec) {
-      const page = await browser.newPage(undefined, exec.signal)
+      const page: BrowserPage = await browser.newPage(undefined, exec.signal)
       const result = await page.navigate(args.url, exec.signal)
       return { url: result.url, title: result.title ?? '' }
     },
@@ -46,15 +47,15 @@ export function apply(ctx: Context): void {
       schema: {
         type: 'object',
         properties: {
-          url: { type: 'string' },
-          text: { type: 'string' },
+          url: { type: 'string', required: true },
+          text: { type: 'string', required: true },
         },
         additionalProperties: false,
       },
       render: (_args, value) => [{ type: 'text', text: value.text }],
     },
     async execute(_args, exec) {
-      const page = await browser.newPage(undefined, exec.signal)
+      const page: BrowserPage = await browser.newPage(undefined, exec.signal)
       const snap = await page.snapshot(exec.signal)
       return { url: snap.url, text: snap.text }
     },
@@ -70,8 +71,8 @@ export function apply(ctx: Context): void {
       schema: {
         type: 'object',
         properties: {
-          url: { type: 'string' },
-          ok: { type: 'boolean' },
+          url: { type: 'string', required: true },
+          ok: { type: 'boolean', required: true },
         },
         additionalProperties: false,
       },
@@ -79,7 +80,7 @@ export function apply(ctx: Context): void {
     },
     timeoutMs: 30_000,
     async execute(args, exec) {
-      const page = await browser.newPage(undefined, exec.signal)
+      const page: BrowserPage = await browser.newPage(undefined, exec.signal)
       const result = await page.click(args.ref, exec.signal)
       return { url: result.url, ok: result.ok }
     },
@@ -95,8 +96,8 @@ export function apply(ctx: Context): void {
       schema: {
         type: 'object',
         properties: {
-          url: { type: 'string' },
-          ok: { type: 'boolean' },
+          url: { type: 'string', required: true },
+          ok: { type: 'boolean', required: true },
         },
         additionalProperties: false,
       },
@@ -104,7 +105,7 @@ export function apply(ctx: Context): void {
     },
     timeoutMs: 30_000,
     async execute(args, exec) {
-      const page = await browser.newPage(undefined, exec.signal)
+      const page: BrowserPage = await browser.newPage(undefined, exec.signal)
       const result = await page.type(args.text, exec.signal)
       return { url: result.url, ok: result.ok }
     },
@@ -118,8 +119,8 @@ export function apply(ctx: Context): void {
       schema: {
         type: 'object',
         properties: {
-          url: { type: 'string' },
-          title: { type: 'string' },
+          url: { type: 'string', required: true },
+          title: { type: 'string', required: true },
         },
         additionalProperties: false,
       },
@@ -130,7 +131,7 @@ export function apply(ctx: Context): void {
     },
     timeoutMs: 60_000,
     async execute(_args, exec) {
-      const page = await browser.newPage(undefined, exec.signal)
+      const page: BrowserPage = await browser.newPage(undefined, exec.signal)
       const result = await page.back(exec.signal)
       return { url: result.url, title: result.title ?? '' }
     },
@@ -144,11 +145,11 @@ export function apply(ctx: Context): void {
       schema: {
         type: 'object',
         properties: {
-          attachmentId: { type: 'string' },
-          mediaType: { type: 'string' },
-          bytes: { type: 'number' },
-          width: { type: 'number' },
-          height: { type: 'number' },
+          attachmentId: { type: 'string', required: true },
+          mediaType: { type: 'string', required: true },
+          bytes: { type: 'number', required: true },
+          width: { type: 'number', required: true },
+          height: { type: 'number', required: true },
         },
         additionalProperties: false,
       },
@@ -158,7 +159,7 @@ export function apply(ctx: Context): void {
       }],
     },
     async execute(_args, exec) {
-      const page = await browser.newPage(undefined, exec.signal)
+      const page: BrowserPage = await browser.newPage(undefined, exec.signal)
       const shot = await page.screenshot(exec.signal)
       const ref: ImageAttachmentRef = await attachments.saveImage({
         data: shot.data,

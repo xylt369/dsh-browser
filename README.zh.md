@@ -55,7 +55,7 @@ URL 安全由 `browser-playwright/src/url-guard.ts` 统一负责，导航前依�
 
 ## 状态
 
-**alpha**，基于 `dsh` `0.1.0-rc.5` 与 Cordis `4.x`。类型按已发布 seam 契约书写；首次 `pnpm install && pnpm build` 可能因 `@deepseek-ai/*` 演进出现少量 import 路径微调。
+**alpha**，基于 `dsh` `0.1.0-rc.x`（当前解析到 `0.1.0-rc.6`）与 Cordis `4.x`。`pnpm install`、`pnpm build`、`pnpm typecheck`、`pnpm test` 均已通过；URL 守卫单测覆盖 SSRF 的协议/主机名/IP 字面量矩阵。
 
 ## 开发
 

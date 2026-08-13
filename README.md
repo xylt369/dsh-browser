@@ -81,7 +81,7 @@ Known residual risk: Playwright owns the network stack, so a TOCTOU exists betwe
 
 ## Status
 
-This is an **alpha** project built against `dsh` `0.1.0-rc.5` and Cordis `4.x`. Types were written from the published seam contracts; a first `pnpm install && pnpm build` may surface minor import-path adjustments as the `@deepseek-ai/*` packages evolve.
+This is an **alpha** project built against `dsh` `0.1.0-rc.x` (currently resolving to `0.1.0-rc.6`) and Cordis `4.x`. `pnpm install`, `pnpm build`, `pnpm typecheck`, and `pnpm test` all pass. The URL-guard unit tests cover the SSRF scheme/hostname/IP-literal matrix.
 
 ## Development
 

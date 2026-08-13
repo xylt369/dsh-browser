@@ -3,6 +3,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { chromium, type Browser, type BrowserContext, type Page } from 'playwright'
 import {
+  BrowserError,
   BrowserRuntime,
   type BrowserActionResult,
   type BrowserNavigateResult,
@@ -11,7 +12,9 @@ import {
   type BrowserScreenshot,
   type BrowserSnapshot,
 } from 'dsh-browser'
-import { createUrlGuard, type UrlGuard } from './url-guard.ts'
+import { createUrlGuard, type UrlGuard } from './url-guard.js'
+
+const USER_AGENT = 'dsh-browser/0.1 (+https://github.com/xylt369/dsh-browser)'
 
 export const name = 'browser-playwright'
 
@@ -23,6 +26,8 @@ class PlaywrightBrowserRuntime extends BrowserRuntime {
   private browser: Browser | null = null
   private context: BrowserContext | null = null
   private page: Page | null = null
+  private pageId: string | null = null
+  private nextPageId = 0
   private readonly guard: UrlGuard
 
   constructor(ctx: Context) {
@@ -32,25 +37,50 @@ class PlaywrightBrowserRuntime extends BrowserRuntime {
 
   override async newPage(options?: BrowserPageOptions, _signal?: AbortSignal): Promise<BrowserPage> {
     await this.ensureBrowser(options)
-    const page = (this.page ??= await this.context!.newPage())
-    return new PlaywrightBrowserPage(page, this.guard)
+    if (!this.page) {
+      this.page = await this.context!.newPage()
+      this.pageId = `page-${this.nextPageId++}`
+    }
+    return new PlaywrightBrowserPage(this.page, this.guard, this.pageId!)
   }
 
   override async close(_signal?: AbortSignal): Promise<void> {
-    await this.browser?.close()
-    this.browser = null
-    this.context = null
+    if (this.context) {
+      await this.context.close()
+      this.context = null
+      this.browser = null
+    } else if (this.browser) {
+      await this.browser.close()
+      this.browser = null
+    }
     this.page = null
+    this.pageId = null
   }
 
   private async ensureBrowser(options?: BrowserPageOptions): Promise<void> {
-    if (this.browser && this.context) return
-    this.browser = await chromium.launch({ headless: options?.headless ?? true })
-    this.context = await this.browser.newContext({
-      viewport: options?.viewport,
-      ...(options?.profileDir ? { storageState: undefined } : {}),
-      userAgent: 'dsh-browser/0.1 (+https://github.com/xylt369/dsh-browser)',
-    })
+    if (this.context) return
+    const headless = options?.headless ?? true
+    try {
+      if (options?.profileDir) {
+        this.context = await chromium.launchPersistentContext(options.profileDir, {
+          headless,
+          viewport: options.viewport,
+          userAgent: USER_AGENT,
+        })
+      } else {
+        this.browser = await chromium.launch({ headless })
+        this.context = await this.browser.newContext({
+          viewport: options?.viewport,
+          userAgent: USER_AGENT,
+        })
+      }
+    } catch (cause) {
+      throw new BrowserError(
+        'BROWSER_LAUNCH_FAILED',
+        'Failed to launch Chromium. Install the browser with `pnpm playwright install chromium`.',
+        { cause },
+      )
+    }
   }
 }
 
@@ -58,11 +88,8 @@ class PlaywrightBrowserPage implements BrowserPage {
   constructor(
     private readonly page: Page,
     private readonly guard: UrlGuard,
+    readonly id: string,
   ) {}
-
-  get id(): string {
-    return `page-${this.page.context().pages().indexOf(this.page)}`
-  }
 
   url(): string | null {
     return this.page.url() || null
@@ -72,7 +99,7 @@ class PlaywrightBrowserPage implements BrowserPage {
     return (await this.page.title()) || null
   }
 
-  async navigate(raw: string, signal?: AbortSignal): Promise<BrowserNavigateResult> {
+  async navigate(raw: string, _signal?: AbortSignal): Promise<BrowserNavigateResult> {
     const url = await this.guard.assertPublicHttpUrl(raw)
     const response = await this.page.goto(url.toString(), { waitUntil: 'domcontentloaded', timeout: 60_000 })
     return {
@@ -83,8 +110,7 @@ class PlaywrightBrowserPage implements BrowserPage {
   }
 
   async snapshot(_signal?: AbortSignal): Promise<BrowserSnapshot> {
-    const text = await this.readSnapshot()
-    return { url: this.page.url(), text, refs: [] }
+    return { url: this.page.url(), text: await this.readSnapshot(), refs: [] }
   }
 
   async screenshot(_signal?: AbortSignal): Promise<BrowserScreenshot> {
@@ -110,11 +136,7 @@ class PlaywrightBrowserPage implements BrowserPage {
 
   async back(_signal?: AbortSignal): Promise<BrowserNavigateResult> {
     await this.page.goBack({ waitUntil: 'domcontentloaded', timeout: 60_000 })
-    return {
-      url: this.page.url(),
-      statusCode: null,
-      title: (await this.page.title()) || null,
-    }
+    return { url: this.page.url(), statusCode: null, title: (await this.page.title()) || null }
   }
 
   async close(_signal?: AbortSignal): Promise<void> {
@@ -123,13 +145,13 @@ class PlaywrightBrowserPage implements BrowserPage {
 
   private async readSnapshot(): Promise<string> {
     try {
-      const body = this.page.locator('body')
-      const aria = await body.ariaSnapshot()
+      const aria = await this.page.locator('body').ariaSnapshot()
       if (aria && aria.trim()) return aria
     } catch {
       // fall through to innerText
     }
-    return (await this.page.evaluate(() => document.body?.innerText ?? '')) || ''
+    const text = (await this.page.evaluate('document.body?.innerText ?? ""')) as string
+    return text || ''
   }
 }
 

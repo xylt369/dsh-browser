@@ -9,7 +9,7 @@
   "exports": {
     ".": {
       "types": "./lib/index.d.ts",
-      "import": "./lib/index.js"
+      "default": "./lib/index.js"
     }
   },
   "files": ["lib", "cordis.patch.yml"],
@@ -17,7 +17,7 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "echo \"(lint: not configured for dsh-tool-browser)\"",
-    "prepare": "pnpm build"
+    "prepublishOnly": "pnpm build"
   },
   "dependencies": {
     "dsh-browser": "workspace:*"

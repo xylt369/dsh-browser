@@ -1,10 +1,10 @@
 /** Service Definition for the browser capability seam. @module dsh-browser */
 
 import { Service, type Context } from '@deepseek-ai/cordis'
-import type { BrowserPage, BrowserPageOptions } from './types.ts'
+import type { BrowserPage, BrowserPageOptions } from './types.js'
 
-export * from './types.ts'
-export { BrowserError } from './error.ts'
+export * from './types.js'
+export { BrowserError } from './error.js'
 
 declare module '@deepseek-ai/cordis' {
   interface Context {
