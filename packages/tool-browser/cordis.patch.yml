@@ -1,0 +1,4 @@
+# dsh-tool-browser bundle patch: registers the model-facing browser tools.
+- insert:
+    - id: tool-browser
+      name: 'dsh-tool-browser'

@@ -1,0 +1,5 @@
+# dsh-browser-playwright bundle patch: mounts the Playwright provider as the
+# concrete `ctx.browser` implementation (one per context).
+- insert:
+    - id: browser-playwright
+      name: 'dsh-browser-playwright'

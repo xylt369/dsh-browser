@@ -1,0 +1,28 @@
+{
+  "name": "dsh-browser",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Service Definition for the DeepSeek Harness browser capability seam (ctx.browser).",
+  "license": "MIT",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "import": "./lib/index.js"
+    }
+  },
+  "files": ["lib"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "echo \"(lint: not configured for dsh-browser)\""
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "typescript": "^5.7.2"
+  }
+}

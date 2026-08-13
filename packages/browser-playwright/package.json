@@ -1,0 +1,40 @@
+{
+  "name": "dsh-browser-playwright",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Playwright-backed Service Provider for the dsh-browser capability seam.",
+  "license": "MIT",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "import": "./lib/index.js"
+    }
+  },
+  "files": ["lib", "cordis.patch.yml"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "echo \"(lint: not configured for dsh-browser-playwright)\"",
+    "test": "node --import tsx --test test/url-guard.test.ts",
+    "prepare": "pnpm build"
+  },
+  "dependencies": {
+    "dsh-browser": "workspace:*",
+    "playwright": "^1.49.0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}
