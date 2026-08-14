@@ -151,3 +151,28 @@ test('provider supports hidden-window mode (skipped on CI)', async (t) => {
     await fiber.dispose()
   }
 })
+
+test('refs from a snapshot survive a newPage() call, so ref clicks work across tool calls', async () => {
+  const ctx = new Context()
+  const fiber = await ctx.plugin(PlaywrightBrowserRuntime)
+  const browser = ctx.browser
+
+  try {
+    // Tool calls each get a fresh PlaywrightBrowserPage wrapper via newPage();
+    // the shared refs recorded by snapshot() must still resolve when a
+    // *different* wrapper clicks by ref (regression: refs used to live on
+    // the wrapper instance and were lost between calls).
+    const snapper = await browser.newPage({ headless: true, profileDir: tempProfile() })
+    await snapper.navigate('https://example.com/')
+    const snap = await snapper.snapshot()
+    assert.ok(snap.refs.length > 0, 'snapshot should expose actionable refs')
+
+    // newPage() wraps the same underlying tab (id is reused by design), but
+    // returns a distinct wrapper -- exactly the boundary a tool call crosses.
+    const clicker = await browser.newPage()
+    const clicked = await clicker.click(snap.refs[0])
+    assert.equal(clicked.ok, true, 'click by ref must succeed on a fresh page instance')
+  } finally {
+    await fiber.dispose()
+  }
+})
