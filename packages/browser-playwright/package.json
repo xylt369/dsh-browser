@@ -1,6 +1,6 @@
 {
   "name": "@yeesy369/dsh-browser-playwright",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "Playwright-backed Service Provider for the dsh-browser capability seam.",
   "license": "MIT",

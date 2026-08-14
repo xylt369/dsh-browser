@@ -8,6 +8,8 @@ export interface BrowserPageOptions {
   headless?: boolean
   /** Preferred viewport size. */
   viewport?: { width: number; height: number }
+  /** Use a locally installed real browser channel instead of the bundled Chromium. */
+  channel?: 'chrome' | 'msedge'
 }
 
 /** Result of navigating a page to a URL. */

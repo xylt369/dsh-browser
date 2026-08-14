@@ -1,6 +1,7 @@
 /** Playwright provider for the browser capability seam. @module dsh-browser-playwright */
 
 import type { Context } from '@deepseek-ai/cordis'
+import { existsSync } from 'node:fs'
 import { chromium, type Browser, type BrowserContext, type Page } from 'playwright'
 import {
   BrowserError,
@@ -14,7 +15,49 @@ import {
 } from '@yeesy369/dsh-browser'
 import { createUrlGuard, type UrlGuard } from './url-guard.js'
 
-const USER_AGENT = '@yeesy369/dsh-browser/0.1 (+https://github.com/xylt369/dsh-browser)'
+// Anti-detection: a custom automation User-Agent is a dead giveaway, so we let
+// Playwright use its realistic per-version Chrome UA and only strip automation
+// markers below. Serious anti-bot stacks may still fingerprint the TLS/browser
+// layer; see README for the honest limits.
+const CHROME_ARGS = ['--disable-blink-features=AutomationControlled']
+const INIT_SCRIPT = "Object.defineProperty(navigator, 'webdriver', { get: () => undefined });"
+
+/** Prefer a locally installed real browser; fall back to the bundled Chromium. */
+function findBrowserChannel(): 'chrome' | 'msedge' | undefined {
+  const candidates: Array<['chrome' | 'msedge', string[]]> = []
+  if (process.platform === 'win32') {
+    const pf = process.env.PROGRAMFILES
+    const pf86 = process.env['PROGRAMFILES(X86)']
+    const local = process.env.LOCALAPPDATA
+    candidates.push(
+      ['chrome', [
+        pf && `${pf}\\Google\\Chrome\\Application\\chrome.exe`,
+        local && `${local}\\Google\\Chrome\\Application\\chrome.exe`,
+        pf86 && `${pf86}\\Google\\Chrome\\Application\\chrome.exe`,
+      ].filter((p): p is string => Boolean(p))],
+      ['msedge', [
+        pf86 && `${pf86}\\Microsoft\\Edge\\Application\\msedge.exe`,
+        pf && `${pf}\\Microsoft\\Edge\\Application\\msedge.exe`,
+      ].filter((p): p is string => Boolean(p))],
+    )
+  } else if (process.platform === 'darwin') {
+    candidates.push(
+      ['chrome', ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome']],
+      ['msedge', ['/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge']],
+    )
+  } else {
+    candidates.push(
+      ['chrome', ['/usr/bin/google-chrome', '/usr/bin/google-chrome-stable', '/usr/bin/chromium']],
+      ['msedge', ['/usr/bin/microsoft-edge', '/usr/bin/microsoft-edge-stable']],
+    )
+  }
+  for (const [channel, paths] of candidates) {
+    for (const path of paths) {
+      if (existsSync(path)) return channel
+    }
+  }
+  return undefined
+}
 
 export const name = 'browser-playwright'
 
@@ -61,20 +104,25 @@ class PlaywrightBrowserRuntime extends BrowserRuntime {
   private async ensureBrowser(options?: BrowserPageOptions): Promise<void> {
     if (this.context) return
     const headless = options?.headless ?? true
+    const channel = options?.channel ?? findBrowserChannel()
+    const launchOptions = {
+      headless,
+      args: CHROME_ARGS,
+      ...(channel ? { channel } : {}),
+    }
     try {
       if (options?.profileDir) {
         this.context = await chromium.launchPersistentContext(options.profileDir, {
-          headless,
           viewport: options.viewport,
-          userAgent: USER_AGENT,
+          ...launchOptions,
         })
       } else {
-        this.browser = await chromium.launch({ headless })
+        this.browser = await chromium.launch(launchOptions)
         this.context = await this.browser.newContext({
           viewport: options?.viewport,
-          userAgent: USER_AGENT,
         })
       }
+      await this.context.addInitScript(INIT_SCRIPT)
     } catch (cause) {
       throw new BrowserError(
         'BROWSER_LAUNCH_FAILED',
