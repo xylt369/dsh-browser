@@ -18,10 +18,17 @@ test('provider navigates, snapshots, screenshots, and blocks private targets end
     const snap = await page.snapshot()
     assert.ok(snap.text.length > 0, 'snapshot text is empty')
     assert.ok(snap.text.toLowerCase().includes('example'), 'snapshot does not mention the page content')
+    assert.ok(snap.refs.length > 0, 'snapshot should expose actionable refs')
 
     const shot = await page.screenshot()
     assert.ok(shot.data.length > 0, 'screenshot is empty')
     assert.ok(shot.width > 0 && shot.height > 0, 'screenshot has no dimensions')
+
+    const title = await page.evaluate<string>('document.title')
+    assert.ok(title.toLowerCase().includes('example'), 'evaluate should return the page title')
+
+    const clicked = await page.click(snap.refs[0])
+    assert.equal(clicked.ok, true, 'click by aria ref should succeed')
 
     await assert.rejects(
       () => page.navigate('http://127.0.0.1/'),

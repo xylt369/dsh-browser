@@ -1,14 +1,24 @@
 /** Model-facing browser tools over the `ctx.browser` seam. @module dsh-tool-browser */
 
 import type { Context } from '@deepseek-ai/cordis'
-import { defineTool } from '@deepseek-ai/dsh-tools'
+import { defineTool, type JsonValue } from '@deepseek-ai/dsh-tools'
 import type { ImageAttachmentRef } from '@deepseek-ai/dsh-attachment'
 import type { BrowserPage } from '@yeesy369/dsh-browser'
+import Schema from '@deepseek-ai/schemastery'
 
 export const name = 'tool-browser'
 export const inject = ['tools', 'browser', 'attachments']
 
-export function apply(ctx: Context): void {
+export interface Config {
+  /** Expose the high-risk `browser_evaluate` tool (arbitrary page JS). Off by default. */
+  evaluate: boolean
+}
+
+export const Config = Schema.object({
+  evaluate: Schema.boolean().default(false),
+})
+
+export function apply(ctx: Context, config: Config): void {
   const { tools, browser, attachments } = ctx
 
   tools.register(defineTool({
@@ -49,6 +59,7 @@ export function apply(ctx: Context): void {
         properties: {
           url: { type: 'string', required: true },
           text: { type: 'string', required: true },
+          refs: { type: 'array', items: { type: 'string' }, required: true },
         },
         additionalProperties: false,
       },
@@ -57,15 +68,15 @@ export function apply(ctx: Context): void {
     async execute(_args, exec) {
       const page: BrowserPage = await browser.newPage(undefined, exec.signal)
       const snap = await page.snapshot(exec.signal)
-      return { url: snap.url, text: snap.text }
+      return { url: snap.url, text: snap.text, refs: [...snap.refs] }
     },
   }))
 
   tools.register(defineTool({
     name: 'browser_click',
-    description: 'Click an element in the current page by CSS selector.',
+    description: 'Click an element in the current page by accessibility ref (from browser_snapshot) or CSS selector.',
     parameters: {
-      ref: { type: 'string', required: true, description: 'A CSS selector for the element to click.' },
+      ref: { type: 'string', required: true, description: 'An accessibility ref (e.g. e1 from browser_snapshot) or CSS selector.' },
     },
     output: {
       schema: {
@@ -85,6 +96,25 @@ export function apply(ctx: Context): void {
       return { url: result.url, ok: result.ok }
     },
   }))
+
+  if (config.evaluate) {
+    tools.register(defineTool({
+      name: 'browser_evaluate',
+      description: 'Run a raw JavaScript expression in the current page and return the JSON-serializable result. HIGH RISK: enable only when you trust the page and gate it behind approval.',
+      parameters: {
+        script: { type: 'string', required: true, description: 'The JavaScript expression to evaluate. Must return a JSON-serializable value.' },
+      },
+      output: {
+        schema: { type: 'json' },
+        render: (_args, value) => [{ type: 'text', text: typeof value === 'string' ? value : JSON.stringify(value) }],
+      },
+      timeoutMs: 30_000,
+      async execute(args, exec) {
+        const page: BrowserPage = await browser.newPage(undefined, exec.signal)
+        return (await page.evaluate(args.script, exec.signal)) as JsonValue
+      },
+    }))
+  }
 
   tools.register(defineTool({
     name: 'browser_type',

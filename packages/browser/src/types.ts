@@ -56,6 +56,8 @@ export interface BrowserPage {
   screenshot(signal?: AbortSignal): Promise<BrowserScreenshot>
   click(ref: string, signal?: AbortSignal): Promise<BrowserActionResult>
   type(text: string, signal?: AbortSignal): Promise<BrowserActionResult>
+  /** Run a raw JavaScript expression in the page. High-risk: expose only behind approval. */
+  evaluate<T>(script: string, signal?: AbortSignal): Promise<T>
   back(signal?: AbortSignal): Promise<BrowserNavigateResult>
   close(signal?: AbortSignal): Promise<void>
 }

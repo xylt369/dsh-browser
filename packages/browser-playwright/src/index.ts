@@ -163,6 +163,8 @@ class PlaywrightBrowserRuntime extends BrowserRuntime {
 }
 
 class PlaywrightBrowserPage implements BrowserPage {
+  private lastRefs: readonly string[] = []
+
   constructor(
     private readonly page: Page,
     private readonly guard: UrlGuard,
@@ -188,7 +190,9 @@ class PlaywrightBrowserPage implements BrowserPage {
   }
 
   async snapshot(_signal?: AbortSignal): Promise<BrowserSnapshot> {
-    return { url: this.page.url(), text: await this.readSnapshot(), refs: [] }
+    const text = await this.readSnapshot()
+    this.lastRefs = extractAriaRefs(text)
+    return { url: this.page.url(), text, refs: this.lastRefs }
   }
 
   async screenshot(_signal?: AbortSignal): Promise<BrowserScreenshot> {
@@ -203,13 +207,19 @@ class PlaywrightBrowserPage implements BrowserPage {
   }
 
   async click(ref: string, _signal?: AbortSignal): Promise<BrowserActionResult> {
-    await this.page.click(ref, { timeout: 30_000 })
+    const useAriaRef = this.lastRefs.includes(ref) || /^e\d+$/.test(ref)
+    const locator = useAriaRef ? this.page.locator(`aria-ref=${ref}`) : this.page.locator(ref)
+    await locator.click({ timeout: 30_000 })
     return { url: this.page.url(), ok: true }
   }
 
   async type(text: string, _signal?: AbortSignal): Promise<BrowserActionResult> {
     await this.page.keyboard.type(text)
     return { url: this.page.url(), ok: true }
+  }
+
+  async evaluate<T>(script: string, _signal?: AbortSignal): Promise<T> {
+    return (await this.page.evaluate(script)) as T
   }
 
   async back(_signal?: AbortSignal): Promise<BrowserNavigateResult> {
@@ -223,7 +233,9 @@ class PlaywrightBrowserPage implements BrowserPage {
 
   private async readSnapshot(): Promise<string> {
     try {
-      const aria = await this.page.locator('body').ariaSnapshot()
+      // `mode: 'ai'` includes actionable element references like `[ref=e2]`,
+      // which is exactly what the model needs to click by ref.
+      const aria = await this.page.locator('body').ariaSnapshot({ mode: 'ai' })
       if (aria && aria.trim()) return aria
     } catch {
       // fall through to innerText
@@ -231,6 +243,15 @@ class PlaywrightBrowserPage implements BrowserPage {
     const text = (await this.page.evaluate('document.body?.innerText ?? ""')) as string
     return text || ''
   }
+}
+
+/** Collect the actionable `ref` ids Playwright embeds in an aria snapshot. */
+export function extractAriaRefs(text: string): string[] {
+  const refs = new Set<string>()
+  const re = /\[ref=([^\]]+)\]/g
+  let match: RegExpExecArray | null
+  while ((match = re.exec(text)) !== null) refs.add(match[1])
+  return [...refs]
 }
 
 export { PlaywrightBrowserRuntime }

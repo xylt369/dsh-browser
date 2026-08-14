@@ -13,6 +13,8 @@ export interface Config {
   denyHosts: string[]
   gatedTools: string[]
   defaultAction: 'allow' | 'ask'
+  /** When `defaultAction: 'ask'`, persist an approved host into `allowHosts`. */
+  remember: boolean
 }
 
 export const Config: Schema<Config> = Schema.object({
@@ -20,16 +22,40 @@ export const Config: Schema<Config> = Schema.object({
   denyHosts: Schema.array(String).default(['localhost', 'metadata.google.internal']),
   gatedTools: Schema.array(String).default(['browser_navigate', 'browser_click', 'browser_type', 'web_fetch']),
   defaultAction: Schema.union(['allow', 'ask']).default('allow'),
+  remember: Schema.boolean().default(true),
 })
+
+type ApprovalOutcome = 'allowed-once' | 'rejected' | 'cancelled' | 'unavailable'
+
+interface ApprovalLike {
+  request(req: {
+    agent?: unknown
+    toolName: string
+    callId?: unknown
+    reason?: string
+    signal?: AbortSignal
+  }): Promise<ApprovalOutcome>
+}
 
 export function apply(ctx: Context, config: Config): void {
   const settings = ctx.get('settings') as SettingsProvider | undefined
+  let scope: SettingsScope<Config> | undefined
   let getConfig: () => Config
   if (settings) {
-    const scope: SettingsScope<Config> = settings.register(settingsNamespace(name), Config, { base: config })
-    getConfig = () => scope.get()
+    const registered = settings.register(settingsNamespace(name), Config, { base: config })
+    scope = registered
+    getConfig = () => registered.get()
   } else {
     getConfig = () => config
+  }
+  const approval = ctx.get('approval') as ApprovalLike | undefined
+
+  const persistHost = async (host: string): Promise<void> => {
+    const s = scope
+    if (!s) return
+    const current = getConfig()
+    if (current.allowHosts.includes(host)) return
+    await s.update({ allowHosts: [...current.allowHosts, host] })
   }
 
   ctx.on('tools/pre-execute', async (exec, next): Promise<PreToolDecision> => {
@@ -42,9 +68,29 @@ export function apply(ctx: Context, config: Config): void {
     if (decision === 'deny') {
       return { kind: 'deny', reason: `Host ${host} is denied by web-permission.` }
     }
-    if (decision === 'ask') {
-      return { kind: 'ask', reason: `Allow web access to ${host}?` }
+    if (decision === 'allow') return next()
+
+    // decision === 'ask'
+    if (current.remember && approval && exec.agent) {
+      let outcome: ApprovalOutcome
+      try {
+        outcome = await approval.request({
+          agent: exec.agent,
+          toolName: exec.name,
+          callId: exec.callId,
+          reason: `Allow web access to ${host}?`,
+          signal: exec.signal,
+        })
+      } catch {
+        return { kind: 'ask', reason: `Allow web access to ${host}?` }
+      }
+      if (outcome === 'allowed-once') {
+        await persistHost(host)
+        return next()
+      }
+      return { kind: 'deny', reason: `Access to ${host} was not approved.` }
     }
-    return next()
+
+    return { kind: 'ask', reason: `Allow web access to ${host}?` }
   })
 }

@@ -45,6 +45,9 @@ importers:
 
   packages/tool-browser:
     dependencies:
+      '@deepseek-ai/schemastery':
+        specifier: ^3.18.1
+        version: 3.18.1
       '@yeesy369/dsh-browser':
         specifier: workspace:*
         version: link:../browser

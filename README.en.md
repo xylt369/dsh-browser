@@ -76,8 +76,8 @@ dsh plugin --profile web remove @yeesy369/dsh-browser-playwright @yeesy369/dsh-t
 |---|---|---|
 | `@yeesy369/dsh-browser` | Service Definition | Declares the `ctx.browser` seam (`BrowserRuntime` / `BrowserPage`). |
 | `@yeesy369/dsh-browser-playwright` | Service Provider | Implements `ctx.browser` with Playwright: headed Edge, persistent profile, anti-detection, auto-relaunch. |
-| `@yeesy369/dsh-tool-browser` | Consumer | Registers `browser_navigate`, `browser_snapshot`, `browser_click`, `browser_type`, `browser_back`, `browser_screenshot`. |
-| `@yeesy369/dsh-web-permission` | Hook | Gates web/browser tools via `tools/pre-execute` (allowlist / denylist / ask). |
+| `@yeesy369/dsh-tool-browser` | Consumer | Registers `browser_navigate`, `browser_snapshot` (returns actionable refs), `browser_click` (by ref or CSS), `browser_type`, `browser_back`, `browser_screenshot`, optional `browser_evaluate`. |
+| `@yeesy369/dsh-web-permission` | Hook | Gates web/browser tools via `tools/pre-execute` (allowlist / denylist / ask; `remember` persists grants). |
 
 ## Security model
 
@@ -104,8 +104,25 @@ web-permission:
 - `allowHosts` / `denyHosts` — hostname allowlist / denylist (denylist wins).
 - `defaultAction` — behavior for hosts in neither list: `allow` (default) or `ask` (require approval).
 - `gatedTools` — which model-facing tools the gate inspects.
+- `remember` — when `true` (default) with `defaultAction: 'ask'`, an approved host is appended to `allowHosts` automatically.
 
 The same fields can be set at composition time in `cordis.patch.yml`; the `settings.yaml` user layer overrides them without a restart.
+
+### Click by accessibility ref
+
+`browser_snapshot` returns actionable `ref` ids (e.g. `e1`, `e2`). `browser_click(ref: "e1")` clicks by ref — more stable than hand-written CSS selectors — and CSS selectors still work.
+
+### browser_evaluate (high risk, off by default)
+
+`browser_evaluate` runs arbitrary JavaScript in the page and is disabled by default. Enable it in the profile's `cordis.patch.yml`:
+
+```yaml
+- id: tool-browser
+  config:
+    evaluate: true
+```
+
+When enabled, tighten the permission gate — it is arbitrary code execution.
 
 ## Background
 

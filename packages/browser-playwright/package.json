@@ -1,6 +1,6 @@
 {
   "name": "@yeesy369/dsh-browser-playwright",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "type": "module",
   "description": "Playwright-backed Service Provider for the dsh-browser capability seam.",
   "license": "MIT",
@@ -20,7 +20,7 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "echo \"(lint: not configured for dsh-browser-playwright)\"",
-    "test": "node --import tsx --test test/url-guard.test.ts",
+    "test": "node --import tsx --test test/url-guard.test.ts test/refs.test.ts",
     "test:e2e": "node --import tsx --test test/browser.e2e.test.ts",
     "prepublishOnly": "pnpm build"
   },

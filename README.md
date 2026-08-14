@@ -79,14 +79,44 @@ dsh plugin --profile web remove @yeesy369/dsh-browser-playwright @yeesy369/dsh-t
 |---|---|---|
 | `@yeesy369/dsh-browser` | 服务定义 | 声明 `ctx.browser` 接口（`BrowserRuntime` / `BrowserPage`） |
 | `@yeesy369/dsh-browser-playwright` | 服务实现 | 用 Edge/Playwright 实现：有头模式 + 持久 profile + 反检测 + 窗口自动重开 |
-| `@yeesy369/dsh-tool-browser` | 消费者 | 注册 `browser_navigate` / `browser_snapshot` / `browser_click` / `browser_type` / `browser_back` / `browser_screenshot` |
-| `@yeesy369/dsh-web-permission` | 权限门 | `tools/pre-execute` 白名单 / 黑名单 / 询问 |
+| `@yeesy369/dsh-tool-browser` | 消费者 | 注册 `browser_navigate` / `browser_snapshot`（返回可点击 ref）/ `browser_click`（按 ref 或 CSS）/ `browser_type` / `browser_back` / `browser_screenshot`，可选 `browser_evaluate` |
+| `@yeesy369/dsh-web-permission` | 权限门 | `tools/pre-execute` 白名单 / 黑名单 / 询问（`remember` 可自动记住授权） |
 
 ## 安全模型
 
 - 只允许公网 HTTP(S) 地址；拒绝内网/回环/link-local/云元数据地址（SSRF 防护，见 `packages/browser-playwright/src/url-guard.ts`）
 - 权限门默认放行公网域名（`defaultAction: allow`），可配置 `allowHosts` / `denyHosts` / `gatedTools`
 - 反检测有局限：极强风控站点仍可能识别人机，属已知边界（见英文版 README）
+
+## 高级配置
+
+### 按 ref 点击（更稳）
+
+`browser_snapshot` 会返回可操作元素的 **ref 列表**（如 `e1`、`e2`），模型可以直接 `browser_click(ref: "e1")` 点击，比手写 CSS 选择器更稳；也兼容 CSS 选择器。
+
+### 权限门自动记住授权
+
+`web-permission` 的 `remember` 默认 `true`：当 `defaultAction: 'ask'` 时，你批准一个域名，它会**自动写进 `allowHosts`**（持久化到 settings.yaml），下次不再询问。
+
+```yaml
+# $DSH_HOME/settings.yaml（热更新，不用重启）
+web-permission:
+  defaultAction: ask
+  remember: true
+```
+
+### browser_evaluate（高风险，默认关闭）
+
+`browser_evaluate` 能在页面里执行任意 JavaScript，默认**不启用**。要开启，在 profile 的 `cordis.patch.yml` 里给 `tool-browser` 加配置：
+
+```yaml
+# ~/.dsh/profiles/web/cordis.patch.yml
+- id: tool-browser
+  config:
+    evaluate: true
+```
+
+开启后请务必配合权限门收紧（`defaultAction: ask` 或加黑名单）——它是任意代码执行，风险最高。
 
 ## 开发与发布
 
