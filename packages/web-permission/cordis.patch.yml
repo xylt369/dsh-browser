@@ -1,0 +1,4 @@
+# dsh-web-permission bundle patch: mounts the web/browser permission gate.
+- insert:
+    - id: web-permission
+      name: 'dsh-web-permission'

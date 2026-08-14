@@ -1,8 +1,8 @@
 {
-  "name": "dsh-browser-playwright",
+  "name": "dsh-web-permission",
   "version": "0.1.0",
   "type": "module",
-  "description": "Playwright-backed Service Provider for the dsh-browser capability seam.",
+  "description": "tools/pre-execute permission gate for web and browser tools (allowlist / denylist / ask).",
   "license": "MIT",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -16,20 +16,21 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "echo \"(lint: not configured for dsh-browser-playwright)\"",
-    "test": "node --import tsx --test test/url-guard.test.ts",
-    "test:e2e": "node --import tsx --test test/browser.e2e.test.ts",
+    "lint": "echo \"(lint: not configured for dsh-web-permission)\"",
+    "test": "node --import tsx --test test/policy.test.ts",
     "prepublishOnly": "pnpm build"
   },
   "dependencies": {
-    "dsh-browser": "workspace:*",
-    "playwright": "^1.49.0"
+    "@deepseek-ai/schemastery": "^3.18.1"
   },
   "peerDependencies": {
-    "@deepseek-ai/cordis": "^4.0.1"
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-tools": "^0.1.0-rc.5"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-tools": "^0.1.0-rc.5",
+    "@deepseek-ai/schemastery": "^3.18.1",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   },

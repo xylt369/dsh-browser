@@ -34,7 +34,7 @@ This project adds the missing **browser capability** to DeepSeek Harness on a **
 
 - Provide a real `ctx.browser` seam (Service Definition / Provider / Consumer) so the model can open, snapshot, click, type, and screenshot a page.
 - Make navigation **SSRF-safe before it ships** — closing the deferred item documented in `dsh-web-fetch-http`.
-- (Planned) Add a web **permission gate** so outbound and page-mutating actions are authorized, not unguarded.
+- Add a web **permission gate** (`dsh-web-permission`) so outbound and page-mutating actions are allowlisted, denylisted, or approved.
 
 ## Packages
 
@@ -43,8 +43,9 @@ This project adds the missing **browser capability** to DeepSeek Harness on a **
 | [`dsh-browser`](./packages/browser) | Service Definition | Declares the `ctx.browser` seam (`BrowserRuntime`, `BrowserPage`, typed results). |
 | [`dsh-browser-playwright`](./packages/browser-playwright) | Service Provider | Implements `ctx.browser` with a headless Playwright browser. |
 | [`dsh-tool-browser`](./packages/tool-browser) | Consumer | Registers `browser_navigate`, `browser_snapshot`, `browser_click`, `browser_type`, `browser_back`, and `browser_screenshot`. |
+| [`dsh-web-permission`](./packages/web-permission) | Hook | Gates web/browser tools via `tools/pre-execute` (allowlist / denylist / ask). |
 
-The Service Definition is a pure library (types + abstract class); the Provider and Consumer are installable bundles.
+The Service Definition is a pure library (types + abstract class); the Provider, Consumer, and permission gate are installable bundles.
 
 ## Architecture
 
@@ -79,7 +80,7 @@ The full design lives in [docs/architecture.md](./docs/architecture.md).
 The intended distribution path is npm (one bundle per package). From a `dsh` checkout:
 
 ```sh
-dsh plugin --profile web add dsh-browser-playwright dsh-tool-browser
+dsh plugin --profile web add dsh-browser-playwright dsh-tool-browser dsh-web-permission
 ```
 
 During development, load the packages from source with a `--patch` overlay:
@@ -87,10 +88,10 @@ During development, load the packages from source with a `--patch` overlay:
 ```sh
 pnpm install
 pnpm build
-dsh --profile web --patch packages/browser-playwright/cordis.patch.yml --patch packages/tool-browser/cordis.patch.yml
+dsh --profile web --patch packages/browser-playwright/cordis.patch.yml --patch packages/tool-browser/cordis.patch.yml --patch packages/web-permission/cordis.patch.yml
 ```
 
-> Git-install of a monorepo subdirectory is not a supported first-class `dsh plugin` path yet; publishing the three packages to npm is the primary plan. See [docs/architecture.md](./docs/architecture.md) for the exact patch rows.
+> Git-install of a monorepo subdirectory is not a supported first-class `dsh plugin` path yet; publishing the four packages to npm is the primary plan. See [docs/architecture.md](./docs/architecture.md) for the exact patch rows.
 
 ## Security model
 
@@ -105,7 +106,7 @@ Known residual risk: Playwright owns the network stack, so a TOCTOU exists betwe
 
 ## Status
 
-This is an **alpha** project built against `dsh` `0.1.0-rc.x` (currently resolving to `0.1.0-rc.6`) and Cordis `4.x`. `pnpm install`, `pnpm build`, `pnpm typecheck`, and `pnpm test` all pass. The URL-guard unit tests cover the SSRF scheme/hostname/IP-literal matrix.
+This is an **alpha** project built against `dsh` `0.1.0-rc.x` (currently resolving to `0.1.0-rc.6`) and Cordis `4.x`. `pnpm install`, `pnpm build`, `pnpm typecheck`, and `pnpm test` all pass. The URL-guard unit tests cover the SSRF scheme/hostname/IP-literal matrix, the permission policy is unit-tested, and `pnpm test:e2e` drives a real headless Chromium (navigate, snapshot, screenshot, SSRF rejection).
 
 ## Development
 
@@ -113,7 +114,8 @@ This is an **alpha** project built against `dsh` `0.1.0-rc.x` (currently resolvi
 pnpm install
 pnpm build
 pnpm typecheck
-pnpm test          # browser-playwright tests require `pnpm playwright install chromium`
+pnpm test          # unit tests (url-guard, permission policy)
+pnpm test:e2e      # real headless Chromium; install first: pnpm playwright install chromium
 ```
 
 See [AGENTS.md](./AGENTS.md) for repository conventions and [LICENSE](./LICENSE) for terms (MIT).

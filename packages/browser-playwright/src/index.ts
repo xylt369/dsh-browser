@@ -33,6 +33,8 @@ class PlaywrightBrowserRuntime extends BrowserRuntime {
   constructor(ctx: Context) {
     super(ctx)
     this.guard = createUrlGuard({ allowPrivate: false })
+    // Tie the browser lifecycle to this plugin's fiber: unloading closes the browser.
+    ctx.effect(() => () => this.close())
   }
 
   override async newPage(options?: BrowserPageOptions, _signal?: AbortSignal): Promise<BrowserPage> {
@@ -45,14 +47,13 @@ class PlaywrightBrowserRuntime extends BrowserRuntime {
   }
 
   override async close(_signal?: AbortSignal): Promise<void> {
-    if (this.context) {
-      await this.context.close()
-      this.context = null
-      this.browser = null
-    } else if (this.browser) {
+    if (this.browser) {
       await this.browser.close()
-      this.browser = null
+    } else if (this.context) {
+      await this.context.close()
     }
+    this.browser = null
+    this.context = null
     this.page = null
     this.pageId = null
   }

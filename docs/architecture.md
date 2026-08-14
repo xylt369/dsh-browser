@@ -42,15 +42,18 @@ Screenshots are not returned as raw bytes to the model. The consumer stores them
 
 The guard is exercised by unit tests for the pure IP classifiers and the scheme/credential/literal branches.
 
-## Permission integration (planned)
+## Permission integration
 
-Browser actions are side-effectful and SSRF-relevant, so the next milestone adds a `tools/pre-execute` gate (a `web-permission` hook) that:
+`dsh-web-permission` gates web/browser tools at `tools/pre-execute` (waterfall):
 
-- allowlists/denylists by hostname,
-- returns `{ kind: 'deny' }` for denylisted targets,
-- returns `{ kind: 'ask' }` through `ctx.approval` for unapproved targets with persistent grants.
+- it reads `exec.name` and the `url` argument, then classifies the hostname as allowlist / denylist / ask;
+- a denylisted host returns `{ kind: 'deny', reason }`;
+- an unknown host returns `{ kind: 'ask', reason }`, which the harness resolves through `ctx.approval`;
+- an allowlisted host delegates via `next()`.
 
-`browser_evaluate` (arbitrary JavaScript) is intentionally not shipped in the first pass because it is the highest-risk capability; when added it will be gated by `ctx.tools.guard()`.
+The classification logic lives in `src/policy.ts` as pure functions so it is unit-testable without a live harness.
+
+`browser_evaluate` (arbitrary JavaScript) is intentionally not shipped because it is the highest-risk capability; when added it will be gated by `ctx.tools.guard()`.
 
 ## Limitations and roadmap
 

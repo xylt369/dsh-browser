@@ -32,7 +32,7 @@
 
 - 提供一个真正的 `ctx.browser` seam（Definition / Provider / Consumer），让模型能打开、快照、点击、输入、截图一个页面。
 - 让导航在**发布前就做到 SSRF 安全**——直接补上 `dsh-web-fetch-http` 文档里标注为 deferred 的那一项。
-- （计划中）加一个 Web **权限门**，让外发与页面变更类操作都经过授权，而不是无门禁。
+- 加一个 Web **权限门**（`dsh-web-permission`），让外发与页面变更类操作走白名单 / 黑名单 / 审批。
 
 ## 包结构
 
@@ -41,8 +41,9 @@
 | [`dsh-browser`](./packages/browser) | Service Definition | 声明 `ctx.browser` seam（`BrowserRuntime`、`BrowserPage`、类型化结果） |
 | [`dsh-browser-playwright`](./packages/browser-playwright) | Service Provider | 用 headless Playwright 实现 `ctx.browser` |
 | [`dsh-tool-browser`](./packages/tool-browser) | Consumer | 注册 `browser_navigate`、`browser_snapshot`、`browser_click`、`browser_type`、`browser_back`、`browser_screenshot` |
+| [`dsh-web-permission`](./packages/web-permission) | Hook | 通过 `tools/pre-execute` 给 web/browser 工具加白名单 / 黑名单 / 审批 |
 
-Service Definition 是纯库（类型 + 抽象类）；Provider 和 Consumer 是可安装的 bundle。
+Service Definition 是纯库（类型 + 抽象类）；Provider、Consumer 和权限门都是可安装的 bundle。
 
 ## 面向模型的工具
 
@@ -60,7 +61,7 @@ Service Definition 是纯库（类型 + 抽象类）；Provider 和 Consumer 是
 正式分发走 npm（每个 bundle 一个包）：
 
 ```sh
-dsh plugin --profile web add dsh-browser-playwright dsh-tool-browser
+dsh plugin --profile web add dsh-browser-playwright dsh-tool-browser dsh-web-permission
 ```
 
 开发阶段从源码加载：
@@ -68,7 +69,7 @@ dsh plugin --profile web add dsh-browser-playwright dsh-tool-browser
 ```sh
 pnpm install
 pnpm build
-dsh --profile web --patch packages/browser-playwright/cordis.patch.yml --patch packages/tool-browser/cordis.patch.yml
+dsh --profile web --patch packages/browser-playwright/cordis.patch.yml --patch packages/tool-browser/cordis.patch.yml --patch packages/web-permission/cordis.patch.yml
 ```
 
 ## 安全模型
@@ -79,7 +80,7 @@ URL 安全由 `browser-playwright/src/url-guard.ts` 统一负责，导航前依�
 
 ## 状态
 
-**alpha**，基于 `dsh` `0.1.0-rc.x`（当前解析到 `0.1.0-rc.6`）与 Cordis `4.x`。`pnpm install`、`pnpm build`、`pnpm typecheck`、`pnpm test` 均已通过；URL 守卫单测覆盖 SSRF 的协议/主机名/IP 字面量矩阵。
+**alpha**，基于 `dsh` `0.1.0-rc.x`（当前解析到 `0.1.0-rc.6`）与 Cordis `4.x`。`pnpm install`、`pnpm build`、`pnpm typecheck`、`pnpm test` 均已通过；URL 守卫单测覆盖 SSRF 的协议/主机名/IP 字面量矩阵，权限门策略有独立单测，`pnpm test:e2e` 会驱动真实 headless Chromium（导航/快照/截图/SSRF 拒绝）。
 
 ## 开发
 
@@ -87,7 +88,8 @@ URL 安全由 `browser-playwright/src/url-guard.ts` 统一负责，导航前依�
 pnpm install
 pnpm build
 pnpm typecheck
-pnpm test          # browser-playwright 测试需先 pnpm playwright install chromium
+pnpm test          # 单测（URL 守卫、权限门策略）
+pnpm test:e2e      # 真实 headless Chromium；先 pnpm playwright install chromium
 ```
 
 仓库约定见 [AGENTS.md](./AGENTS.md)，许可见 [LICENSE](./LICENSE)（MIT）。

@@ -62,6 +62,25 @@ importers:
         specifier: ^5.7.2
         version: 5.9.3
 
+  packages/web-permission:
+    dependencies:
+      '@deepseek-ai/schemastery':
+        specifier: ^3.18.1
+        version: 3.18.1
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.1
+        version: 4.0.1
+      '@deepseek-ai/dsh-tools':
+        specifier: ^0.1.0-rc.5
+        version: 0.1.0-rc.6(f8724372086ccc1457fc84e7becee2e0)
+      tsx:
+        specifier: ^4.19.2
+        version: 4.23.12
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
 packages:
 
   '@deepseek-ai/cordis@4.0.1':
