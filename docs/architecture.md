@@ -21,11 +21,25 @@ A provider subclasses it and is loaded as a plugin, so swapping Playwright for C
 `BrowserRuntime` owns one browser, one context, and one reusable page. `newPage()` returns a `BrowserPage` wrapper that lazily reuses the existing page, so navigation state persists across tool calls in a session.
 
 - `navigate` validates the URL through the URL guard, then `goto` with `domcontentloaded`.
-- `snapshot` reads the accessibility tree (`locator.ariaSnapshot()`), falling back to `document.body.innerText`.
+- `snapshot` reads the accessibility tree via `ariaSnapshot({ mode: 'ai' })` — the AI mode exposes actionable refs like `[ref=e1]` — falling back to `document.body.innerText`.
+- `click` accepts an accessibility ref (e.g. `e1` from the last snapshot) or a CSS selector.
+- `evaluate` runs a raw JS expression in the page (high risk; the consumer exposes it only behind a config flag).
 - `screenshot` produces PNG bytes; the consumer commits them via `ctx.attachments.saveImage`.
-- `click` / `type` / `back` map to Playwright actions.
+- `type` / `back` map to Playwright actions.
 
 Per-session page isolation (rather than one process-wide page) is a planned follow-up; see Limitations.
+
+## Deployment configuration
+
+`dsh-browser-playwright` exposes a provider-level `Config` so headed vs headless, the browser channel, and the persistent profile are deployment choices:
+
+```yaml
+- id: browser-playwright
+  config:
+    headless: false        # true for server/CI (no desktop)
+    channel: msedge        # or chrome; auto-detected when omitted
+    profileDir: ~/.dsh/edge-profile
+```
 
 ## Screenshot → attachment
 
@@ -48,23 +62,21 @@ The guard is exercised by unit tests for the pure IP classifiers and the scheme/
 
 - it reads `exec.name` and the `url` argument, then classifies the hostname as allowlist / denylist / ask;
 - a denylisted host returns `{ kind: 'deny', reason }`;
-- an unknown host returns `{ kind: 'ask', reason }`, which the harness resolves through `ctx.approval`;
+- with `defaultAction: 'ask'`, an unknown host routes through `ctx.approval`; with `remember` (default `true`), an approved host is appended to `allowHosts` (persisted to settings.yaml), so it is not asked again;
 - an allowlisted host delegates via `next()`.
 
 The classification logic lives in `src/policy.ts` as pure functions so it is unit-testable without a live harness.
 
-`browser_evaluate` (arbitrary JavaScript) is intentionally not shipped because it is the highest-risk capability; when added it will be gated by `ctx.tools.guard()`.
+`browser_evaluate` ships but is **disabled by default** (`tool-browser` config `evaluate: true` to enable) because it is arbitrary code execution; the permission gate should be tightened alongside it.
 
 ## Limitations and roadmap
 
 - **Residual SSRF TOCTOU** — Playwright owns the connection; the DNS check and the browser's connect are separate. A proxy or `--host-resolver-rules` pin is the follow-up.
 - **Single process-wide page** — per-session browser contexts are planned.
-- **`refs` in snapshots** — accessibility-tree refs are not parsed yet; `browser_click` takes a CSS selector.
-- **`browser_evaluate`** — deferred until the permission gate ships.
 
 ## Composition
 
-The Provider and Consumer are bundles. Their patch rows are:
+The Provider, Consumer, and permission gate are bundles. Their patch rows are:
 
 ```yaml
 - insert:
@@ -73,4 +85,7 @@ The Provider and Consumer are bundles. Their patch rows are:
 - insert:
     - id: tool-browser
       name: '@yeesy369/dsh-tool-browser'
+- insert:
+    - id: web-permission
+      name: '@yeesy369/dsh-web-permission'
 ```
