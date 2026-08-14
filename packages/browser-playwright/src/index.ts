@@ -2,6 +2,8 @@
 
 import type { Context } from '@deepseek-ai/cordis'
 import { existsSync } from 'node:fs'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
 import { chromium, type Browser, type BrowserContext, type Page } from 'playwright'
 import {
   BrowserError,
@@ -22,33 +24,37 @@ import { createUrlGuard, type UrlGuard } from './url-guard.js'
 const CHROME_ARGS = ['--disable-blink-features=AutomationControlled']
 const INIT_SCRIPT = "Object.defineProperty(navigator, 'webdriver', { get: () => undefined });"
 
-/** Prefer a locally installed real browser; fall back to the bundled Chromium. */
-function findBrowserChannel(): 'chrome' | 'msedge' | undefined {
-  const candidates: Array<['chrome' | 'msedge', string[]]> = []
+/**
+ * Prefer a locally installed real browser — Microsoft Edge first (the default
+ * for this provider), then Chrome; fall back to the bundled Chromium when
+ * neither is installed.
+ */
+function findBrowserChannel(): 'msedge' | 'chrome' | undefined {
+  const candidates: Array<['msedge' | 'chrome', string[]]> = []
   if (process.platform === 'win32') {
     const pf = process.env.PROGRAMFILES
     const pf86 = process.env['PROGRAMFILES(X86)']
     const local = process.env.LOCALAPPDATA
     candidates.push(
+      ['msedge', [
+        pf86 && `${pf86}\\Microsoft\\Edge\\Application\\msedge.exe`,
+        pf && `${pf}\\Microsoft\\Edge\\Application\\msedge.exe`,
+      ].filter((p): p is string => Boolean(p))],
       ['chrome', [
         pf && `${pf}\\Google\\Chrome\\Application\\chrome.exe`,
         local && `${local}\\Google\\Chrome\\Application\\chrome.exe`,
         pf86 && `${pf86}\\Google\\Chrome\\Application\\chrome.exe`,
       ].filter((p): p is string => Boolean(p))],
-      ['msedge', [
-        pf86 && `${pf86}\\Microsoft\\Edge\\Application\\msedge.exe`,
-        pf && `${pf}\\Microsoft\\Edge\\Application\\msedge.exe`,
-      ].filter((p): p is string => Boolean(p))],
     )
   } else if (process.platform === 'darwin') {
     candidates.push(
-      ['chrome', ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome']],
       ['msedge', ['/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge']],
+      ['chrome', ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome']],
     )
   } else {
     candidates.push(
-      ['chrome', ['/usr/bin/google-chrome', '/usr/bin/google-chrome-stable', '/usr/bin/chromium']],
       ['msedge', ['/usr/bin/microsoft-edge', '/usr/bin/microsoft-edge-stable']],
+      ['chrome', ['/usr/bin/google-chrome', '/usr/bin/google-chrome-stable', '/usr/bin/chromium']],
     )
   }
   for (const [channel, paths] of candidates) {
@@ -81,8 +87,17 @@ class PlaywrightBrowserRuntime extends BrowserRuntime {
   }
 
   override async newPage(options?: BrowserPageOptions, _signal?: AbortSignal): Promise<BrowserPage> {
-    await this.ensureBrowser(options)
-    if (!this.page) {
+    try {
+      await this.ensureBrowser(options)
+      if (!this.page || this.page.isClosed()) {
+        this.page = await this.context!.newPage()
+        this.pageId = `page-${this.nextPageId++}`
+      }
+    } catch {
+      // The window was closed under us (user closed it, crash, or idle
+      // teardown): reset state and relaunch once so the next call works.
+      await this.close()
+      await this.ensureBrowser(options)
       this.page = await this.context!.newPage()
       this.pageId = `page-${this.nextPageId++}`
     }
@@ -90,10 +105,14 @@ class PlaywrightBrowserRuntime extends BrowserRuntime {
   }
 
   override async close(_signal?: AbortSignal): Promise<void> {
-    if (this.browser) {
-      await this.browser.close()
-    } else if (this.context) {
-      await this.context.close()
+    try {
+      if (this.browser) {
+        await this.browser.close()
+      } else if (this.context) {
+        await this.context.close()
+      }
+    } catch {
+      // already closed — nothing to do
     }
     this.browser = null
     this.context = null
@@ -102,31 +121,31 @@ class PlaywrightBrowserRuntime extends BrowserRuntime {
   }
 
   private async ensureBrowser(options?: BrowserPageOptions): Promise<void> {
-    if (this.context) return
-    const headless = options?.headless ?? true
+    if (this.context && (!this.browser || this.browser.isConnected())) return
+    // Real-user mode by default: headed, installed Edge (or Chrome), persistent
+    // profile. A visible window opens on the user's desktop; cookies and logins
+    // persist in the profile dir across sessions, and automation fingerprints
+    // are reduced so anti-bot sites (bilibili, zhihu, ...) treat us like a
+    // normal browser. Falls back to Playwright's bundled Chromium when no real
+    // browser is installed.
+    const headless = options?.headless ?? false
     const channel = options?.channel ?? findBrowserChannel()
+    const profileDir = options?.profileDir ?? join(homedir(), '.dsh', 'edge-profile')
     const launchOptions = {
       headless,
       args: CHROME_ARGS,
       ...(channel ? { channel } : {}),
     }
     try {
-      if (options?.profileDir) {
-        this.context = await chromium.launchPersistentContext(options.profileDir, {
-          viewport: options.viewport,
-          ...launchOptions,
-        })
-      } else {
-        this.browser = await chromium.launch(launchOptions)
-        this.context = await this.browser.newContext({
-          viewport: options?.viewport,
-        })
-      }
+      this.context = await chromium.launchPersistentContext(profileDir, {
+        viewport: options?.viewport,
+        ...launchOptions,
+      })
       await this.context.addInitScript(INIT_SCRIPT)
     } catch (cause) {
       throw new BrowserError(
         'BROWSER_LAUNCH_FAILED',
-        'Failed to launch Chromium. Install the browser with `pnpm playwright install chromium`.',
+        'Failed to launch a browser. Install Microsoft Edge (or Chrome), or run `pnpm playwright install chromium`.',
         { cause },
       )
     }

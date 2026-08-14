@@ -1,9 +1,12 @@
 {
   "name": "@yeesy369/dsh-browser",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "type": "module",
   "description": "Service Definition for the DeepSeek Harness browser capability seam (ctx.browser).",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "exports": {

@@ -58,11 +58,15 @@ Service Definition 是纯库（类型 + 抽象类）；Provider、Consumer 和�
 
 ## 安装
 
-正式分发走 npm（每个 bundle 一个包）：
+包已发布到 npm（`@yeesy369` 作用域，每个 bundle 一个包），一条命令：
 
 ```sh
 dsh plugin --profile web add @yeesy369/dsh-browser-playwright @yeesy369/dsh-tool-browser @yeesy369/dsh-web-permission
 ```
+
+Windows 一键脚本：`powershell -ExecutionPolicy Bypass -File scripts/install.ps1`（安装三个 bundle，并往 `cordis.patch.yml` 写入示例 `allowHosts`）。装完重启 profile（`Ctrl+C` 后重新 `dsh web`）生效。
+
+provider 默认**真实用户模式**：有头 Microsoft Edge（`channel: 'msedge'`，Chrome 兜底）、持久化 profile（`~/.dsh/edge-profile`，登录态跨会话保留）、降低自动化指纹（`--disable-blink-features=AutomationControlled` + init script 隐藏 `navigator.webdriver`）、窗口被关闭时自动重新拉起；无真实浏览器时回退 Playwright 自带 Chromium。`@yeesy369/dsh-web-permission`（权限门）默认对白名单/黑名单之外的主机放行——需要更严格默认值请改 `cordis.patch.yml`。
 
 开发阶段从源码加载：
 

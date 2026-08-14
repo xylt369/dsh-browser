@@ -77,11 +77,15 @@ The full design lives in [docs/architecture.md](./docs/architecture.md).
 
 ## Install
 
-The intended distribution path is npm (one bundle per package). From a `dsh` checkout:
+Packages are published to npm under the `@yeesy369` scope (one bundle per package). One command:
 
 ```sh
 dsh plugin --profile web add @yeesy369/dsh-browser-playwright @yeesy369/dsh-tool-browser @yeesy369/dsh-web-permission
 ```
+
+Windows one-click: `powershell -ExecutionPolicy Bypass -File scripts/install.ps1` (installs the bundles and adds an example `allowHosts` entry to `cordis.patch.yml`). Restart the profile (`Ctrl+C`, then `dsh web`) afterwards.
+
+The provider runs **real-user mode by default**: headed Microsoft Edge (`channel: 'msedge'`, Chrome as fallback), a persistent profile under `~/.dsh/edge-profile` (cookies/logins survive restarts), reduced automation fingerprints (`--disable-blink-features=AutomationControlled`, `navigator.webdriver` hidden via init script), and it auto-relaunches if the window is closed. Falls back to Playwright's bundled Chromium when no real browser is installed. `@yeesy369/dsh-web-permission` (the permission gate) defaults to `allow` for hosts outside the allow/deny lists — review `cordis.patch.yml` if you need stricter defaults.
 
 During development, load the packages from source with a `--patch` overlay:
 
@@ -91,7 +95,7 @@ pnpm build
 dsh --profile web --patch packages/browser-playwright/cordis.patch.yml --patch packages/tool-browser/cordis.patch.yml --patch packages/web-permission/cordis.patch.yml
 ```
 
-> Git-install of a monorepo subdirectory is not a supported first-class `dsh plugin` path yet; publishing the four packages to npm is the primary plan. See [docs/architecture.md](./docs/architecture.md) for the exact patch rows.
+> Git-install of a monorepo subdirectory is not a supported first-class `dsh plugin` path; the npm packages above are the supported distribution. See [docs/architecture.md](./docs/architecture.md) for the exact patch rows.
 
 ## Security model
 
