@@ -67,6 +67,8 @@ dsh plugin --profile web add @yeesy369/dsh-browser-playwright @yeesy369/dsh-tool
 
 **想自定义白名单/黑名单？** 编辑 `$DSH_HOME/settings.yaml` 的 `web-permission` 节（**热更新**，不用重启 dsh），或 `~/.dsh/profiles/web/cordis.patch.yml`。
 
+**想用 `browser_evaluate`（在页面里执行 JS）？** 默认关闭，开启方法见下方「高级配置」→「browser_evaluate」的配置示例。
+
 **怎么卸载？**
 
 ```sh

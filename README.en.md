@@ -64,6 +64,8 @@ dsh plugin --profile web add @yeesy369/dsh-browser-playwright @yeesy369/dsh-tool
 
 **Custom allow/deny lists?** Edit the `web-permission` section of `$DSH_HOME/settings.yaml` (hot-reloaded, no restart) or `~/.dsh/profiles/web/cordis.patch.yml`.
 
+**Want to use `browser_evaluate` (run JS in the page)?** It is disabled by default; see the `browser_evaluate` config example under "Advanced configuration".
+
 **Uninstall?**
 
 ```sh
