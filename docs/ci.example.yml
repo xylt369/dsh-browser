@@ -2,10 +2,11 @@ name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,6 +16,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: pnpm install
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm typecheck
+      - run: pnpm test
+      - name: Install Chromium for e2e
+        run: pnpm --filter @yeesy369/dsh-browser-playwright exec playwright install --with-deps chromium
+      - run: pnpm test:e2e
