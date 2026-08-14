@@ -17,7 +17,7 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "echo \"(lint: not configured for dsh-web-permission)\"",
-    "test": "node --import tsx --test test/policy.test.ts",
+    "test": "node --import tsx --test test/policy.test.ts test/gate.integration.test.ts",
     "prepublishOnly": "pnpm build"
   },
   "dependencies": {
