@@ -4,11 +4,35 @@
 
 `dsh` 有文件系统、shell、搜索和抓取原语，但**没有浏览器**：没有 `ctx.browser` seam，没有 provider，也没有面向模型的「打开 / 阅读 / 操作真实网页」工具。本仓库按 `dsh` 一贯的 Service Definition / Provider / Consumer 模型，用三个包补上这块能力。
 
-## 为什么值得做
+## 项目背景
 
-- **这是真实缺口。** 官方 `dsh-web-fetch-http` 的 README 明确写着 SSRF/私网防护是 deferred，且「内网可达环境禁止启用」；全仓库也没有任何 browser 包。
-- **面向模型而非面向 DOM。** 页面用紧凑的无障碍树快照表示，而不是整页 HTML；截图变成模型真正能「看见」的持久图片附件。
-- **默认安全。** 每次导航都过 URL 守卫：拒绝凭据、非 `http(s)`、黑名单主机名，以及私网/回环/link-local/组播目标（含 DNS 解析后校验）。
+[DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（`dsh`）是 DeepSeek AI 开源的 agent 框架，核心思想是「**一切皆插件**」——连模型适配器、工具注册表、会话日志、agent loop 本身都是插件（[出处](https://github.com/deepseek-ai/deepseek-harness/blob/master/README.md)）。
+
+`dsh` 已经内置了一个 **Web 访问 seam**（`ctx.web`），横跨「search 与 fetch」两项操作（[`docs/subsystems/web.md`](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/subsystems/web.md)）。但它**没有浏览器能力**：没有 `ctx.browser` seam、没有 browser provider、没有浏览器工具——[`packages/web/`](https://github.com/deepseek-ai/deepseek-harness/tree/master/packages/web) 目录下只有 `web`、`tool-web`、`web-fetch-http` 和几个 `web-search-*` provider。
+
+## 本项目要解决的问题
+
+本项目针对 `dsh` Web 能力里三个**有官方文档佐证**的具体缺口：
+
+1. **已发布的 fetch 后端是 SSRF 原语，且默认被禁用。** 官方 [`dsh-web-fetch-http` README](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/web/web-fetch-http/README.md) 原文：
+
+   > SSRF / private-network protection is deferred — no blocking of private, loopback, link-local, multicast, or otherwise non-public destinations... Until it lands, this provider is an SSRF primitive and **must not be enabled** in a deployment that can reach sensitive internal network targets.
+
+   发布的 base bundle 印证了这一点：[`tool-web` 配置为 `fetch: false`](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/bundle/base/cordis.patch.yml)，且默认不挂 fetch provider。
+
+2. **完全没有浏览器能力。** `dsh` 能搜索、（有条件地）抓取，但不能打开、阅读、驱动一个真实网页。
+
+3. **Web 访问没有授权策略。** 官方 [`dsh-tool-web` README](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/web/tool-web/README.md) 原文：
+
+   > No web-specific permission policy — both tools execute without requesting `ctx.approval`... the package does not define persistent URL/domain grants.
+
+## 项目目的
+
+`dsh-browser` 在「默认安全」的地基上，给 DeepSeek Harness 补上缺失的**浏览器能力**：
+
+- 提供一个真正的 `ctx.browser` seam（Definition / Provider / Consumer），让模型能打开、快照、点击、输入、截图一个页面。
+- 让导航在**发布前就做到 SSRF 安全**——直接补上 `dsh-web-fetch-http` 文档里标注为 deferred 的那一项。
+- （计划中）加一个 Web **权限门**，让外发与页面变更类操作都经过授权，而不是无门禁。
 
 ## 包结构
 

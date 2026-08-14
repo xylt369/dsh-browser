@@ -6,11 +6,35 @@ Browser capability for [DeepSeek Harness](https://github.com/deepseek-ai/deepsee
 
 > 中文说明见 [README.zh.md](./README.zh.md)。
 
-## Why it matters
+## Background
 
-- **A real gap.** `dsh`'s official `dsh-web-fetch-http` provider explicitly documents that SSRF / private-network protection is deferred and that it "must not be enabled" on internal-network-reachable deployments. There is no browser package anywhere in the tree.
-- **Built for the model, not for the DOM.** Pages are presented as compact accessibility snapshots instead of raw HTML, and screenshots become durable image attachments the model can actually see.
-- **Safe by default.** Every navigation passes a URL guard that rejects credentials, non-`http(s)` schemes, blocked hostnames, and private/loopback/link-local/multicast destinations (with DNS resolve-then-validate).
+[DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (`dsh`) is an open-source agent harness built by DeepSeek AI. Its core idea is **everything is a plugin** — even the model adapter, tool registry, session log, and agent loop are plugins ([source](https://github.com/deepseek-ai/deepseek-harness/blob/master/README.md)).
+
+`dsh` already ships a **web access seam** (`ctx.web`) that spans two operations, search and fetch ([`docs/subsystems/web.md`](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/subsystems/web.md)). It does **not** ship a browser: there is no `ctx.browser` seam, no browser provider, and no browser tools — the [`packages/web/`](https://github.com/deepseek-ai/deepseek-harness/tree/master/packages/web) tree contains only `web`, `tool-web`, `web-fetch-http`, and the `web-search-*` providers.
+
+## Problems this project solves
+
+`dsh-browser` exists because of three documented gaps in `dsh`'s web story:
+
+1. **The shipped fetch backend is an SSRF primitive, disabled by default.** The official [`dsh-web-fetch-http` README](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/web/web-fetch-http/README.md) states:
+
+   > SSRF / private-network protection is deferred — no blocking of private, loopback, link-local, multicast, or otherwise non-public destinations... Until it lands, this provider is an SSRF primitive and **must not be enabled** in a deployment that can reach sensitive internal network targets.
+
+   The shipped base bundle reflects this: [`tool-web` is configured with `fetch: false`](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/bundle/base/cordis.patch.yml) and no fetch provider is mounted by default.
+
+2. **There is no browser capability at all.** `dsh` can search and (conditionally) fetch, but it cannot open, read, or drive a real web page.
+
+3. **Web access has no authorization policy.** The official [`dsh-tool-web` README](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/web/tool-web/README.md) states:
+
+   > No web-specific permission policy — both tools execute without requesting `ctx.approval`... the package does not define persistent URL/domain grants.
+
+## Purpose
+
+This project adds the missing **browser capability** to DeepSeek Harness on a **safe-by-default foundation**:
+
+- Provide a real `ctx.browser` seam (Service Definition / Provider / Consumer) so the model can open, snapshot, click, type, and screenshot a page.
+- Make navigation **SSRF-safe before it ships** — closing the deferred item documented in `dsh-web-fetch-http`.
+- (Planned) Add a web **permission gate** so outbound and page-mutating actions are authorized, not unguarded.
 
 ## Packages
 
