@@ -8,6 +8,12 @@ Browser capability for [DeepSeek Harness](https://github.com/deepseek-ai/deepsee
 
 ## Quick start (3 steps)
 
+> **Prerequisite (one-time)**: your terminal must have `dsh` on PATH. If `dsh` is not recognized, install it globally first:
+> ```sh
+> npm i -g @deepseek-ai/dsh
+> ```
+> Then **open a new terminal window** and continue. Alternatively, replace `dsh` in every command below with `npx @deepseek-ai/dsh`.
+
 **Step 1 — Install** (any terminal):
 
 ```sh
