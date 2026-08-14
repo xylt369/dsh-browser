@@ -90,7 +90,7 @@ class PlaywrightBrowserRuntime extends BrowserRuntime {
     try {
       await this.ensureBrowser(options)
       if (!this.page || this.page.isClosed()) {
-        this.page = await this.context!.newPage()
+        this.page = await this.acquirePage()
         this.pageId = `page-${this.nextPageId++}`
       }
     } catch {
@@ -98,10 +98,20 @@ class PlaywrightBrowserRuntime extends BrowserRuntime {
       // teardown): reset state and relaunch once so the next call works.
       await this.close()
       await this.ensureBrowser(options)
-      this.page = await this.context!.newPage()
+      this.page = await this.acquirePage()
       this.pageId = `page-${this.nextPageId++}`
     }
     return new PlaywrightBrowserPage(this.page, this.guard, this.pageId!)
+  }
+
+  /**
+   * Reuse the first open tab instead of always creating a new one. On launch
+   * the browser already opens one (about:blank) tab — creating another one
+   * leaves a blank tab behind every time the browser (re)starts.
+   */
+  private async acquirePage(): Promise<Page> {
+    const existing = this.context!.pages().find((p) => !p.isClosed())
+    return existing ?? (await this.context!.newPage())
   }
 
   override async close(_signal?: AbortSignal): Promise<void> {
