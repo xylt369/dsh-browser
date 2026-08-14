@@ -1,6 +1,6 @@
 {
   "name": "@yeesy369/dsh-web-permission",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "type": "module",
   "description": "tools/pre-execute permission gate for web and browser tools (allowlist / denylist / ask).",
   "license": "MIT",
@@ -21,12 +21,12 @@
     "prepublishOnly": "pnpm build"
   },
   "dependencies": {
-    "@deepseek-ai/dsh-settings": "^0.1.0-rc.6",
-    "@deepseek-ai/dsh-tools": "^0.1.0-rc.6",
     "@deepseek-ai/schemastery": "^3.18.1"
   },
   "peerDependencies": {
-    "@deepseek-ai/cordis": "^4.0.1"
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-settings": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-tools": "^0.1.0-rc.6"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
