@@ -2,6 +2,7 @@
 
 import type { Context } from '@deepseek-ai/cordis'
 import type { PreToolDecision } from '@deepseek-ai/dsh-tools'
+import { settingsNamespace, type SettingsProvider, type SettingsScope } from '@deepseek-ai/dsh-settings'
 import Schema from '@deepseek-ai/schemastery'
 import { decideHost, hostnameOf } from './policy.js'
 
@@ -22,12 +23,22 @@ export const Config: Schema<Config> = Schema.object({
 })
 
 export function apply(ctx: Context, config: Config): void {
+  const settings = ctx.get('settings') as SettingsProvider | undefined
+  let getConfig: () => Config
+  if (settings) {
+    const scope: SettingsScope<Config> = settings.register(settingsNamespace(name), Config, { base: config })
+    getConfig = () => scope.get()
+  } else {
+    getConfig = () => config
+  }
+
   ctx.on('tools/pre-execute', async (exec, next): Promise<PreToolDecision> => {
-    if (!config.gatedTools.includes(exec.name)) return next()
+    const current = getConfig()
+    if (!current.gatedTools.includes(exec.name)) return next()
     const host = hostnameOf(exec.arguments)
     if (!host) return next()
 
-    const decision = decideHost(config, host)
+    const decision = decideHost(current, host)
     if (decision === 'deny') {
       return { kind: 'deny', reason: `Host ${host} is denied by web-permission.` }
     }

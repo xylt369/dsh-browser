@@ -78,6 +78,28 @@ URL 安全由 `browser-playwright/src/url-guard.ts` 统一负责，导航前依�
 
 已知残余风险：Playwright 拥有网络栈，守卫的 DNS 校验与浏览器实际连接之间存在 TOCTOU 窗口；代理或 `--host-resolver-rules` 钉扎是文档化的后续项。切勿在能触及敏感内网的环境里放开私网目标。
 
+## 配置
+
+`@yeesy369/dsh-web-permission` 从 `$DSH_HOME/settings.yaml` 读取配置，**热加载**——改完不用重启 `dsh`：
+
+```yaml
+web-permission:
+  allowHosts:
+    - example.com
+  denyHosts:
+    - evil.com
+  defaultAction: allow   # 或 ask
+  gatedTools:
+    - browser_navigate
+    - web_fetch
+```
+
+- `allowHosts` / `denyHosts` —— 主机名白名单 / 黑名单（黑名单优先）。
+- `defaultAction` —— 既不在白名单也不在黑名单时的行为：`allow`（默认）或 `ask`（要求审批）。
+- `gatedTools` —— 需要被该门审查的面向模型工具。
+
+同样的字段也可以在组合期写进 `cordis.patch.yml`；`settings.yaml` 的用户层会在不重启的情况下覆盖它们。
+
 ## 状态
 
 **alpha**，基于 `dsh` `0.1.0-rc.x`（当前解析到 `0.1.0-rc.6`）与 Cordis `4.x`。`pnpm install`、`pnpm build`、`pnpm typecheck`、`pnpm test` 均已通过；URL 守卫单测覆盖 SSRF 的协议/主机名/IP 字面量矩阵，权限门策略有独立单测，`pnpm test:e2e` 会驱动真实 headless Chromium（导航/快照/截图/SSRF 拒绝）。

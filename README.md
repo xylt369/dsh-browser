@@ -104,6 +104,28 @@ dsh --profile web --patch packages/browser-playwright/cordis.patch.yml --patch p
 
 Known residual risk: Playwright owns the network stack, so a TOCTOU exists between the guard's DNS check and the browser's own connection. A proxy or `--host-resolver-rules` pin is the documented follow-up. Never enable private targets on a network that can reach sensitive internal hosts.
 
+## Configuration
+
+`@yeesy369/dsh-web-permission` reads its settings from `$DSH_HOME/settings.yaml`, which is **hot-reloaded** — edit it without restarting `dsh`:
+
+```yaml
+web-permission:
+  allowHosts:
+    - example.com
+  denyHosts:
+    - evil.com
+  defaultAction: allow   # or ask
+  gatedTools:
+    - browser_navigate
+    - web_fetch
+```
+
+- `allowHosts` / `denyHosts` — hostname allowlist / denylist (denylist wins).
+- `defaultAction` — what to do with hosts in neither list: `allow` (default) or `ask` (require approval).
+- `gatedTools` — which model-facing tools the gate inspects.
+
+The same fields can be set at composition time in `cordis.patch.yml`; the `settings.yaml` user layer overrides them without a restart.
+
 ## Status
 
 This is an **alpha** project built against `dsh` `0.1.0-rc.x` (currently resolving to `0.1.0-rc.6`) and Cordis `4.x`. `pnpm install`, `pnpm build`, `pnpm typecheck`, and `pnpm test` all pass. The URL-guard unit tests cover the SSRF scheme/hostname/IP-literal matrix, the permission policy is unit-tested, and `pnpm test:e2e` drives a real headless Chromium (navigate, snapshot, screenshot, SSRF rejection).
