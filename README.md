@@ -86,6 +86,7 @@ dsh plugin --profile web remove @yeesy369/dsh-browser-playwright @yeesy369/dsh-t
 
 - 只允许公网 HTTP(S) 地址；拒绝内网/回环/link-local/云元数据地址（SSRF 防护，见 `packages/browser-playwright/src/url-guard.ts`）
 - 权限门默认放行公网域名（`defaultAction: allow`），可配置 `allowHosts` / `denyHosts` / `gatedTools`
+- 默认放行公网域名是刻意的：SSRF 守卫已拦截内网；需要更严授权时把 `defaultAction` 设为 `ask` 并配置 `allowHosts`（严格模式）
 - 反检测有局限：极强风控站点仍可能识别人机，属已知边界（见英文版 README）
 
 ## 高级配置

@@ -126,7 +126,7 @@ When enabled, tighten the permission gate — it is arbitrary code execution.
 
 ## Background
 
-`dsh` ships a **web access seam** (`ctx.web`: search + fetch) but no browser — no `ctx.browser` seam, no provider, no browser tools. This project closes that gap on a safe-by-default foundation:
+`dsh` ships a **web access seam** (`ctx.web`: search + fetch) but no browser — no `ctx.browser` seam, no provider, no browser tools. This project closes that gap with **SSRF-safe navigation by default** — private/loopback/link-local/metadata destinations are blocked, while public hosts are allowed (the permission gate can tighten that to `ask`/allowlist):
 
 1. **The shipped fetch backend is an SSRF primitive, disabled by default** (`dsh-web-fetch-http` defers private-network protection). `dsh-browser` makes navigation SSRF-safe from day one.
 2. **There is no browser capability at all** in `dsh`.

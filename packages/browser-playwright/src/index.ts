@@ -5,6 +5,7 @@ import { existsSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { chromium, type Browser, type BrowserContext, type Page } from 'playwright'
+import Schema from '@deepseek-ai/schemastery'
 import {
   BrowserError,
   BrowserRuntime,
@@ -67,11 +68,27 @@ function findBrowserChannel(): 'msedge' | 'chrome' | undefined {
 
 export const name = 'browser-playwright'
 
-export function apply(ctx: Context): void {
-  ctx.plugin(PlaywrightBrowserRuntime)
+export interface Config {
+  /** Run headless (server/CI); defaults to `false` (headed real browser). */
+  headless: boolean
+  /** Prefer a real browser channel; auto-detect when omitted. */
+  channel?: 'chrome' | 'msedge'
+  /** Persistent profile directory (login state). */
+  profileDir?: string
+}
+
+export const Config = Schema.object({
+  headless: Schema.boolean().default(false),
+  channel: Schema.union(['chrome', 'msedge']),
+  profileDir: Schema.string(),
+})
+
+export function apply(ctx: Context, config: Config): void {
+  ctx.plugin(PlaywrightBrowserRuntime, config)
 }
 
 class PlaywrightBrowserRuntime extends BrowserRuntime {
+  private readonly config: Config
   private browser: Browser | null = null
   private context: BrowserContext | null = null
   private page: Page | null = null
@@ -79,8 +96,9 @@ class PlaywrightBrowserRuntime extends BrowserRuntime {
   private nextPageId = 0
   private readonly guard: UrlGuard
 
-  constructor(ctx: Context) {
+  constructor(ctx: Context, config: Partial<Config> = {}) {
     super(ctx)
+    this.config = { headless: false, ...config }
     this.guard = createUrlGuard({ allowPrivate: false })
     // Tie the browser lifecycle to this plugin's fiber: unloading closes the browser.
     ctx.effect(() => () => this.close())
@@ -138,9 +156,9 @@ class PlaywrightBrowserRuntime extends BrowserRuntime {
     // are reduced so anti-bot sites (bilibili, zhihu, ...) treat us like a
     // normal browser. Falls back to Playwright's bundled Chromium when no real
     // browser is installed.
-    const headless = options?.headless ?? false
-    const channel = options?.channel ?? findBrowserChannel()
-    const profileDir = options?.profileDir ?? join(homedir(), '.dsh', 'edge-profile')
+    const headless = options?.headless ?? this.config.headless
+    const channel = options?.channel ?? this.config.channel ?? findBrowserChannel()
+    const profileDir = options?.profileDir ?? this.config.profileDir ?? join(homedir(), '.dsh', 'edge-profile')
     const launchOptions = {
       headless,
       args: CHROME_ARGS,
