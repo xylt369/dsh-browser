@@ -34,16 +34,16 @@ This project adds the missing **browser capability** to DeepSeek Harness on a **
 
 - Provide a real `ctx.browser` seam (Service Definition / Provider / Consumer) so the model can open, snapshot, click, type, and screenshot a page.
 - Make navigation **SSRF-safe before it ships** — closing the deferred item documented in `dsh-web-fetch-http`.
-- Add a web **permission gate** (`dsh-web-permission`) so outbound and page-mutating actions are allowlisted, denylisted, or approved.
+- Add a web **permission gate** (`@yeesy369/dsh-web-permission`) so outbound and page-mutating actions are allowlisted, denylisted, or approved.
 
 ## Packages
 
 | Package | Role | What it does |
 |---|---|---|
-| [`dsh-browser`](./packages/browser) | Service Definition | Declares the `ctx.browser` seam (`BrowserRuntime`, `BrowserPage`, typed results). |
-| [`dsh-browser-playwright`](./packages/browser-playwright) | Service Provider | Implements `ctx.browser` with a headless Playwright browser. |
-| [`dsh-tool-browser`](./packages/tool-browser) | Consumer | Registers `browser_navigate`, `browser_snapshot`, `browser_click`, `browser_type`, `browser_back`, and `browser_screenshot`. |
-| [`dsh-web-permission`](./packages/web-permission) | Hook | Gates web/browser tools via `tools/pre-execute` (allowlist / denylist / ask). |
+| [`@yeesy369/dsh-browser`](./packages/browser) | Service Definition | Declares the `ctx.browser` seam (`BrowserRuntime`, `BrowserPage`, typed results). |
+| [`@yeesy369/dsh-browser-playwright`](./packages/browser-playwright) | Service Provider | Implements `ctx.browser` with a headless Playwright browser. |
+| [`@yeesy369/dsh-tool-browser`](./packages/tool-browser) | Consumer | Registers `browser_navigate`, `browser_snapshot`, `browser_click`, `browser_type`, `browser_back`, and `browser_screenshot`. |
+| [`@yeesy369/dsh-web-permission`](./packages/web-permission) | Hook | Gates web/browser tools via `tools/pre-execute` (allowlist / denylist / ask). |
 
 The Service Definition is a pure library (types + abstract class); the Provider, Consumer, and permission gate are installable bundles.
 
@@ -51,8 +51,8 @@ The Service Definition is a pure library (types + abstract class); the Provider,
 
 ```mermaid
 flowchart LR
-  TD["dsh-browser<br/>(ctx.browser seam)"] --> P["dsh-browser-playwright<br/>(provider)"]
-  TD --> C["dsh-tool-browser<br/>(consumer)"]
+  TD["@yeesy369/dsh-browser<br/>(ctx.browser seam)"] --> P["@yeesy369/dsh-browser-playwright<br/>(provider)"]
+  TD --> C["@yeesy369/dsh-tool-browser<br/>(consumer)"]
   C --> A["ctx.attachments<br/>(screenshots)"]
   C --> T["ctx.tools<br/>(defineTool)"]
   P --> G["url-guard<br/>(anti-SSRF)"]
@@ -80,7 +80,7 @@ The full design lives in [docs/architecture.md](./docs/architecture.md).
 The intended distribution path is npm (one bundle per package). From a `dsh` checkout:
 
 ```sh
-dsh plugin --profile web add dsh-browser-playwright dsh-tool-browser dsh-web-permission
+dsh plugin --profile web add @yeesy369/dsh-browser-playwright @yeesy369/dsh-tool-browser @yeesy369/dsh-web-permission
 ```
 
 During development, load the packages from source with a `--patch` overlay:

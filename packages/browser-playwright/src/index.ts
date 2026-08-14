@@ -11,10 +11,10 @@ import {
   type BrowserPageOptions,
   type BrowserScreenshot,
   type BrowserSnapshot,
-} from 'dsh-browser'
+} from '@yeesy369/dsh-browser'
 import { createUrlGuard, type UrlGuard } from './url-guard.js'
 
-const USER_AGENT = 'dsh-browser/0.1 (+https://github.com/xylt369/dsh-browser)'
+const USER_AGENT = '@yeesy369/dsh-browser/0.1 (+https://github.com/xylt369/dsh-browser)'
 
 export const name = 'browser-playwright'
 

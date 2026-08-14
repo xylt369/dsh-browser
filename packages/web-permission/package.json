@@ -1,5 +1,5 @@
 {
-  "name": "dsh-web-permission",
+  "name": "@yeesy369/dsh-web-permission",
   "version": "0.1.0",
   "type": "module",
   "description": "tools/pre-execute permission gate for web and browser tools (allowlist / denylist / ask).",

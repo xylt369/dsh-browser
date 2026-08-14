@@ -11,7 +11,7 @@
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm -r lint",
     "test": "pnpm -r test",
-    "test:e2e": "pnpm --filter dsh-browser-playwright test:e2e"
+    "test:e2e": "pnpm --filter @yeesy369/dsh-browser-playwright test:e2e"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

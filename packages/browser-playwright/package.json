@@ -1,5 +1,5 @@
 {
-  "name": "dsh-browser-playwright",
+  "name": "@yeesy369/dsh-browser-playwright",
   "version": "0.1.0",
   "type": "module",
   "description": "Playwright-backed Service Provider for the dsh-browser capability seam.",
@@ -22,7 +22,7 @@
     "prepublishOnly": "pnpm build"
   },
   "dependencies": {
-    "dsh-browser": "workspace:*",
+    "@yeesy369/dsh-browser": "workspace:*",
     "playwright": "^1.49.0"
   },
   "peerDependencies": {

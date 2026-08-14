@@ -32,16 +32,16 @@
 
 - 提供一个真正的 `ctx.browser` seam（Definition / Provider / Consumer），让模型能打开、快照、点击、输入、截图一个页面。
 - 让导航在**发布前就做到 SSRF 安全**——直接补上 `dsh-web-fetch-http` 文档里标注为 deferred 的那一项。
-- 加一个 Web **权限门**（`dsh-web-permission`），让外发与页面变更类操作走白名单 / 黑名单 / 审批。
+- 加一个 Web **权限门**（`@yeesy369/dsh-web-permission`），让外发与页面变更类操作走白名单 / 黑名单 / 审批。
 
 ## 包结构
 
 | 包 | 角色 | 职责 |
 |---|---|---|
-| [`dsh-browser`](./packages/browser) | Service Definition | 声明 `ctx.browser` seam（`BrowserRuntime`、`BrowserPage`、类型化结果） |
-| [`dsh-browser-playwright`](./packages/browser-playwright) | Service Provider | 用 headless Playwright 实现 `ctx.browser` |
-| [`dsh-tool-browser`](./packages/tool-browser) | Consumer | 注册 `browser_navigate`、`browser_snapshot`、`browser_click`、`browser_type`、`browser_back`、`browser_screenshot` |
-| [`dsh-web-permission`](./packages/web-permission) | Hook | 通过 `tools/pre-execute` 给 web/browser 工具加白名单 / 黑名单 / 审批 |
+| [`@yeesy369/dsh-browser`](./packages/browser) | Service Definition | 声明 `ctx.browser` seam（`BrowserRuntime`、`BrowserPage`、类型化结果） |
+| [`@yeesy369/dsh-browser-playwright`](./packages/browser-playwright) | Service Provider | 用 headless Playwright 实现 `ctx.browser` |
+| [`@yeesy369/dsh-tool-browser`](./packages/tool-browser) | Consumer | 注册 `browser_navigate`、`browser_snapshot`、`browser_click`、`browser_type`、`browser_back`、`browser_screenshot` |
+| [`@yeesy369/dsh-web-permission`](./packages/web-permission) | Hook | 通过 `tools/pre-execute` 给 web/browser 工具加白名单 / 黑名单 / 审批 |
 
 Service Definition 是纯库（类型 + 抽象类）；Provider、Consumer 和权限门都是可安装的 bundle。
 
@@ -61,7 +61,7 @@ Service Definition 是纯库（类型 + 抽象类）；Provider、Consumer 和�
 正式分发走 npm（每个 bundle 一个包）：
 
 ```sh
-dsh plugin --profile web add dsh-browser-playwright dsh-tool-browser dsh-web-permission
+dsh plugin --profile web add @yeesy369/dsh-browser-playwright @yeesy369/dsh-tool-browser @yeesy369/dsh-web-permission
 ```
 
 开发阶段从源码加载：

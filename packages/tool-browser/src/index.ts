@@ -3,7 +3,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ImageAttachmentRef } from '@deepseek-ai/dsh-attachment'
-import type { BrowserPage } from 'dsh-browser'
+import type { BrowserPage } from '@yeesy369/dsh-browser'
 
 export const name = 'tool-browser'
 export const inject = ['tools', 'browser', 'attachments']

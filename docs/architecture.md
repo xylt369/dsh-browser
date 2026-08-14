@@ -4,7 +4,7 @@ The browser capability follows DeepSeek Harness's "everything is a plugin" model
 
 ## Seam shape
 
-`dsh-browser` declares `ctx.browser` as an **abstract seam** (the `ctx.subprocess` pattern, one implementation per context):
+`@yeesy369/dsh-browser` declares `ctx.browser` as an **abstract seam** (the `ctx.subprocess` pattern, one implementation per context):
 
 ```ts
 export abstract class BrowserRuntime extends Service {
@@ -44,7 +44,7 @@ The guard is exercised by unit tests for the pure IP classifiers and the scheme/
 
 ## Permission integration
 
-`dsh-web-permission` gates web/browser tools at `tools/pre-execute` (waterfall):
+`@yeesy369/dsh-web-permission` gates web/browser tools at `tools/pre-execute` (waterfall):
 
 - it reads `exec.name` and the `url` argument, then classifies the hostname as allowlist / denylist / ask;
 - a denylisted host returns `{ kind: 'deny', reason }`;
@@ -69,8 +69,8 @@ The Provider and Consumer are bundles. Their patch rows are:
 ```yaml
 - insert:
     - id: browser-playwright
-      name: 'dsh-browser-playwright'
+      name: '@yeesy369/dsh-browser-playwright'
 - insert:
     - id: tool-browser
-      name: 'dsh-tool-browser'
+      name: '@yeesy369/dsh-tool-browser'
 ```

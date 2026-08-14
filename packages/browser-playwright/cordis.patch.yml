@@ -2,4 +2,4 @@
 # concrete `ctx.browser` implementation (one per context).
 - insert:
     - id: browser-playwright
-      name: 'dsh-browser-playwright'
+      name: '@yeesy369/dsh-browser-playwright'

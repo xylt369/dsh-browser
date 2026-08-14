@@ -26,7 +26,7 @@ importers:
 
   packages/browser-playwright:
     dependencies:
-      dsh-browser:
+      '@yeesy369/dsh-browser':
         specifier: workspace:*
         version: link:../browser
       playwright:
@@ -45,7 +45,7 @@ importers:
 
   packages/tool-browser:
     dependencies:
-      dsh-browser:
+      '@yeesy369/dsh-browser':
         specifier: workspace:*
         version: link:../browser
     devDependencies:
