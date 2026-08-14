@@ -13,7 +13,13 @@
 $ErrorActionPreference = 'Stop'
 
 if (-not (Get-Command dsh -ErrorAction SilentlyContinue)) {
-  Write-Host '[dsh-browser] dsh CLI not found on PATH. Install DeepSeek Harness first, e.g. `npm i -g @deepseek-ai/dsh` or run it via npx.' -ForegroundColor Red
+  Write-Host '[dsh-browser] dsh CLI not found.' -ForegroundColor Red
+  Write-Host ''
+  Write-Host '  Check:    dsh --version' -ForegroundColor Yellow
+  Write-Host '  Install:  npm i -g @deepseek-ai/dsh' -ForegroundColor Yellow
+  Write-Host '  Website:  https://www.npmjs.com/package/@deepseek-ai/dsh' -ForegroundColor Yellow
+  Write-Host ''
+  Write-Host '  After installing, open a NEW terminal window and run this script again.' -ForegroundColor Yellow
   exit 1
 }
 
