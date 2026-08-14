@@ -29,4 +29,10 @@ pnpm test:e2e    # real-browser e2e (installs Chromium if needed)
 
 ## Releasing
 
-Bump versions, publish in dependency order (`dsh-browser` first, then the bundles), and create a GitHub release.
+Release checklist — versions are per-package, so a change to one package does not require bumping the others.
+
+1. Bump the version of **every package whose code changed** (the `dsh-browser` seam may stay behind when only the bundles changed).
+2. Publish in dependency order: `dsh-browser` first (if bumped), then `dsh-browser-playwright`, `dsh-tool-browser`, `dsh-web-permission`.
+3. Verify each publish: `npm view @yeesy369/<pkg> version` returns the new version and its `dependencies` are correct.
+4. Deprecate superseded versions: `npm deprecate @yeesy369/<pkg>@<old> "Superseded by <new>"`.
+5. Create a GitHub release: `gh release create vX.Y.Z --title ... --notes ... --target main`.
