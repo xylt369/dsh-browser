@@ -16,11 +16,11 @@ export function hostnameOf(args: unknown): string | null {
 
 /** Decide how to treat a host: denylist wins, then allowlist, otherwise ask. */
 export function decideHost(
-  config: { allowHosts: readonly string[]; denyHosts: readonly string[] },
+  config: { allowHosts: readonly string[]; denyHosts: readonly string[]; defaultAction: 'allow' | 'ask' },
   host: string,
 ): HostDecision {
   const h = host.toLowerCase()
   if (config.denyHosts.includes(h)) return 'deny'
   if (config.allowHosts.includes(h)) return 'allow'
-  return 'ask'
+  return config.defaultAction
 }

@@ -11,12 +11,14 @@ export interface Config {
   allowHosts: string[]
   denyHosts: string[]
   gatedTools: string[]
+  defaultAction: 'allow' | 'ask'
 }
 
 export const Config: Schema<Config> = Schema.object({
   allowHosts: Schema.array(String).default([]),
   denyHosts: Schema.array(String).default(['localhost', 'metadata.google.internal']),
   gatedTools: Schema.array(String).default(['browser_navigate', 'browser_click', 'browser_type', 'web_fetch']),
+  defaultAction: Schema.union(['allow', 'ask']).default('allow'),
 })
 
 export function apply(ctx: Context, config: Config): void {

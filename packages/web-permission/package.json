@@ -1,6 +1,6 @@
 {
   "name": "@yeesy369/dsh-web-permission",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "tools/pre-execute permission gate for web and browser tools (allowlist / denylist / ask).",
   "license": "MIT",

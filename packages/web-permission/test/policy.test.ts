@@ -12,8 +12,14 @@ test('hostnameOf extracts hostnames and rejects non-URL arguments', () => {
 })
 
 test('decideHost applies denylist first, then allowlist, then asks', () => {
-  const config = { allowHosts: ['example.com'], denyHosts: ['evil.com'] }
+  const config = { allowHosts: ['example.com'], denyHosts: ['evil.com'], defaultAction: 'ask' as const }
   assert.equal(decideHost(config, 'evil.com'), 'deny')
   assert.equal(decideHost(config, 'example.com'), 'allow')
   assert.equal(decideHost(config, 'unknown.com'), 'ask')
+})
+
+test('decideHost defaults to allow for unknown hosts when defaultAction is allow', () => {
+  const config = { allowHosts: [], denyHosts: ['evil.com'], defaultAction: 'allow' as const }
+  assert.equal(decideHost(config, 'evil.com'), 'deny')
+  assert.equal(decideHost(config, 'example.com'), 'allow')
 })

@@ -11,6 +11,7 @@ test('web-permission gate denies, allows, and asks through the real waterfall', 
       allowHosts: ['example.com'],
       denyHosts: ['evil.com'],
       gatedTools: ['browser_navigate'],
+      defaultAction: 'ask',
     },
   )
 
