@@ -1,6 +1,6 @@
 {
   "name": "@yeesy369/dsh-tool-browser",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "type": "module",
   "description": "Model-facing browser tools for DeepSeek Harness over the ctx.browser seam.",
   "license": "MIT",
@@ -23,7 +23,7 @@
     "prepublishOnly": "pnpm build"
   },
   "dependencies": {
-    "@yeesy369/dsh-browser": "workspace:*",
+    "@yeesy369/dsh-browser": "0.5.1",
     "@deepseek-ai/schemastery": "^3.18.1"
   },
   "peerDependencies": {

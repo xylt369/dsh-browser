@@ -30,7 +30,7 @@ importers:
         specifier: ^3.18.1
         version: 3.18.1
       '@yeesy369/dsh-browser':
-        specifier: workspace:*
+        specifier: 0.5.1
         version: link:../browser
       playwright:
         specifier: ^1.49.0
@@ -52,7 +52,7 @@ importers:
         specifier: ^3.18.1
         version: 3.18.1
       '@yeesy369/dsh-browser':
-        specifier: workspace:*
+        specifier: 0.5.1
         version: link:../browser
     devDependencies:
       '@deepseek-ai/cordis':

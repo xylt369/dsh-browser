@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.1 (2026-08-15)
+
+- **Fix ref-based clicking** (`browser-playwright`): snapshot refs now live on the runtime instead of the per-call page instance, so `browser_click(ref=...)` works across tool calls; ref detection also accepts the current Playwright ref format (e.g. `f29e86`) alongside the legacy `e1` style (`isAriaRefFormat`). Previously ref clicks could time out after 30s. Closes #1.
+- **Publish hardening**: `browser-playwright` 0.6.1 and `tool-browser` 0.5.1 now depend on a concrete `@yeesy369/dsh-browser@0.5.1` instead of `workspace:*`, so the published packages install outside the monorepo.
+- **CI**: drop the redundant pnpm version pin (package.json `packageManager` already selects pnpm 11.21.0); e2e uses `windowVisibility: "headless"` so the suite runs on headless CI runners.
+
 ## 0.6.0 (2026-08-15)
 
 - **Window modes**: `browser-playwright` now ships `windowVisibility: "visible" | "hidden" | "headless"` (default `visible`). `hidden` runs the real browser with the window minimized and parked offscreen — best anti-bot posture without desktop clutter — while `headless` stays the no-window choice for servers/CI. The legacy `headless: true` field still works and maps to `windowVisibility: "headless"`.

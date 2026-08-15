@@ -1,6 +1,6 @@
 {
   "name": "@yeesy369/dsh-browser-playwright",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "type": "module",
   "description": "Playwright-backed Service Provider for the dsh-browser capability seam.",
   "license": "MIT",
@@ -25,7 +25,7 @@
     "prepublishOnly": "pnpm build"
   },
   "dependencies": {
-    "@yeesy369/dsh-browser": "workspace:*",
+    "@yeesy369/dsh-browser": "0.5.1",
     "@deepseek-ai/schemastery": "^3.18.1",
     "playwright": "^1.49.0"
   },
