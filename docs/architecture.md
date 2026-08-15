@@ -23,6 +23,7 @@ A provider subclasses it and is loaded as a plugin, so swapping Playwright for C
 - `navigate` validates the URL through the URL guard, then `goto` with `domcontentloaded`.
 - `snapshot` reads the accessibility tree via `ariaSnapshot({ mode: 'ai' })` — the AI mode exposes actionable refs like `[ref=e1]` — falling back to `document.body.innerText`.
 - `click` accepts an accessibility ref (e.g. `e1` from the last snapshot) or a CSS selector.
+- `scroll` moves the main document by a pixel amount in a direction (default 800px down) and reports the new offset plus an `atBoundary` flag so the model knows when it hit the edge.
 - `evaluate` runs a raw JS expression in the page (high risk; the consumer exposes it only behind a config flag).
 - `screenshot` produces PNG bytes; the consumer commits them via `ctx.attachments.saveImage`.
 - `type` / `back` map to Playwright actions.

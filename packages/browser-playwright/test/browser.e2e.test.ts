@@ -65,3 +65,45 @@ test('provider reuses the launch tab and recreates a page after close', async ()
     await fiber.dispose()
   }
 })
+
+test('provider scrolls the page and reports offsets plus boundary state', async () => {
+  const ctx = new Context()
+  const fiber = await ctx.plugin(PlaywrightBrowserRuntime)
+  const browser = ctx.browser
+
+  try {
+    const page = await browser.newPage({ headless: true, profileDir: tempProfile() })
+    await page.navigate('https://example.com/')
+
+    // example.com is short — give the page real scrollable height.
+    await page.evaluate(`(() => {
+      const div = document.createElement('div')
+      div.style.height = '5000px'
+      div.textContent = 'scroll-space'
+      document.body.appendChild(div)
+    })()`)
+
+    const down = await page.scroll({ direction: 'down', amount: 800 })
+    assert.equal(down.ok, true)
+    assert.ok(down.scrollY > 0, `expected scrollY > 0 after scrolling down, got ${down.scrollY}`)
+    assert.equal(down.scrollX, 0, 'vertical scroll should not change scrollX')
+    assert.equal(down.atBoundary, false, 'should not be at the boundary after one 800px scroll')
+
+    const up = await page.scroll({ direction: 'up', amount: 800 })
+    assert.ok(up.scrollY < down.scrollY, `expected scrollY to decrease, got ${up.scrollY}`)
+
+    const bottom = await page.scroll({ direction: 'down', amount: 100_000 })
+    assert.equal(bottom.atBoundary, true, 'should report boundary when the page cannot scroll further')
+
+    const top = await page.scroll({ direction: 'up', amount: 100_000 })
+    assert.equal(top.atBoundary, true, 'should report boundary at the top of the page')
+    assert.equal(top.scrollY, 0, 'should return to the top of the page')
+
+    // Defaults: direction down, 800px.
+    const def = await page.scroll()
+    assert.ok(def.scrollY >= 800, `default scroll should move 800px, got ${def.scrollY}`)
+    assert.equal(def.atBoundary, false, 'default scroll should not hit the boundary')
+  } finally {
+    await fiber.dispose()
+  }
+})

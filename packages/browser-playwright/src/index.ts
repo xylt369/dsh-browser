@@ -13,6 +13,7 @@ import {
   type BrowserNavigateResult,
   type BrowserPage,
   type BrowserPageOptions,
+  type BrowserScrollResult,
   type BrowserScreenshot,
   type BrowserSnapshot,
 } from '@yeesy369/dsh-browser'
@@ -234,6 +235,31 @@ class PlaywrightBrowserPage implements BrowserPage {
   async type(text: string, _signal?: AbortSignal): Promise<BrowserActionResult> {
     await this.page.keyboard.type(text)
     return { url: this.page.url(), ok: true }
+  }
+
+  async scroll(options?: { direction?: 'up' | 'down' | 'left' | 'right'; amount?: number }, _signal?: AbortSignal): Promise<BrowserScrollResult> {
+    const direction = options?.direction ?? 'down'
+    const amount = options?.amount ?? 800
+    const deltaX = direction === 'left' ? -amount : direction === 'right' ? amount : 0
+    const deltaY = direction === 'up' ? -amount : direction === 'down' ? amount : 0
+    // Scroll the main document. Using window.scrollBy (rather than synthesizing
+    // a mouse wheel at an arbitrary cursor position) is deterministic regardless
+    // of where the pointer last was, which keeps repeated model-driven scrolls
+    // predictable. The default programmatic behavior is instant, so the
+    // boundary check below cannot race a smooth-scroll animation.
+    const before = await this.page.evaluate('({ x: window.scrollX, y: window.scrollY })') as { x: number; y: number }
+    await this.page.evaluate(`window.scrollBy(${deltaX}, ${deltaY})`)
+    // Wait one animation frame so the browser settles the new scroll offset.
+    await this.page.evaluate('new Promise((resolve) => requestAnimationFrame(() => resolve()))')
+    const after = await this.page.evaluate('({ x: window.scrollX, y: window.scrollY })') as { x: number; y: number }
+    const moved = Math.abs(after.x - before.x) + Math.abs(after.y - before.y)
+    return {
+      url: this.page.url(),
+      ok: true,
+      scrollX: after.x,
+      scrollY: after.y,
+      atBoundary: moved < Math.abs(deltaX) + Math.abs(deltaY),
+    }
   }
 
   async evaluate<T>(script: string, _signal?: AbortSignal): Promise<T> {

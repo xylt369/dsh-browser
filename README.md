@@ -81,7 +81,7 @@ dsh plugin --profile web remove @yeesy369/dsh-browser-playwright @yeesy369/dsh-t
 |---|---|---|
 | `@yeesy369/dsh-browser` | 服务定义 | 声明 `ctx.browser` 接口（`BrowserRuntime` / `BrowserPage`） |
 | `@yeesy369/dsh-browser-playwright` | 服务实现 | 用 Edge/Playwright 实现：有头模式 + 持久 profile + 反检测 + 窗口自动重开 |
-| `@yeesy369/dsh-tool-browser` | 消费者 | 注册 `browser_navigate` / `browser_snapshot`（返回可点击 ref）/ `browser_click`（按 ref 或 CSS）/ `browser_type` / `browser_back` / `browser_screenshot`，可选 `browser_evaluate` |
+| `@yeesy369/dsh-tool-browser` | 消费者 | 注册 `browser_navigate` / `browser_snapshot`（返回可点击 ref）/ `browser_click`（按 ref 或 CSS）/ `browser_type` / `browser_scroll` / `browser_back` / `browser_screenshot`，可选 `browser_evaluate` |
 | `@yeesy369/dsh-web-permission` | 权限门 | `tools/pre-execute` 白名单 / 黑名单 / 询问（`remember` 可自动记住授权） |
 
 ## 安全模型
@@ -96,6 +96,10 @@ dsh plugin --profile web remove @yeesy369/dsh-browser-playwright @yeesy369/dsh-t
 ### 按 ref 点击（更稳）
 
 `browser_snapshot` 会返回可操作元素的 **ref 列表**（如 `e1`、`e2`），模型可以直接 `browser_click(ref: "e1")` 点击，比手写 CSS 选择器更稳；也兼容 CSS 选择器。
+
+### 滚动长页面
+
+`browser_scroll` 让模型在长页面（资讯流、文档、评论区）里逐屏前进：默认向下滚 800px，可传 `direction: "up" | "down" | "left" | "right"` 和 `amount`（像素）。返回新的 `scrollX` / `scrollY`，并用 `atBoundary` 告诉模型是否已到页面边缘——模型看到 `atBoundary: true` 就该停止继续滚动，避免空转。
 
 ### 权限门自动记住授权
 

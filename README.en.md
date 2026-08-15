@@ -78,7 +78,7 @@ dsh plugin --profile web remove @yeesy369/dsh-browser-playwright @yeesy369/dsh-t
 |---|---|---|
 | `@yeesy369/dsh-browser` | Service Definition | Declares the `ctx.browser` seam (`BrowserRuntime` / `BrowserPage`). |
 | `@yeesy369/dsh-browser-playwright` | Service Provider | Implements `ctx.browser` with Playwright: headed Edge, persistent profile, anti-detection, auto-relaunch. |
-| `@yeesy369/dsh-tool-browser` | Consumer | Registers `browser_navigate`, `browser_snapshot` (returns actionable refs), `browser_click` (by ref or CSS), `browser_type`, `browser_back`, `browser_screenshot`, optional `browser_evaluate`. |
+| `@yeesy369/dsh-tool-browser` | Consumer | Registers `browser_navigate`, `browser_snapshot` (returns actionable refs), `browser_click` (by ref or CSS), `browser_type`, `browser_scroll`, `browser_back`, `browser_screenshot`, optional `browser_evaluate`. |
 | `@yeesy369/dsh-web-permission` | Hook | Gates web/browser tools via `tools/pre-execute` (allowlist / denylist / ask; `remember` persists grants). |
 
 ## Security model
@@ -113,6 +113,10 @@ The same fields can be set at composition time in `cordis.patch.yml`; the `setti
 ### Click by accessibility ref
 
 `browser_snapshot` returns actionable `ref` ids (e.g. `e1`, `e2`). `browser_click(ref: "e1")` clicks by ref — more stable than hand-written CSS selectors — and CSS selectors still work.
+
+### Scrolling long pages
+
+`browser_scroll` lets the model page through long content (feeds, documents, comment threads): it scrolls 800px down by default, and accepts `direction: "up" | "down" | "left" | "right"` plus an `amount` in pixels. The result returns the new `scrollX` / `scrollY` and an `atBoundary` flag, so the model can stop scrolling once it hits the edge instead of looping pointlessly.
 
 ### browser_evaluate (high risk, off by default)
 

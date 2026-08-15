@@ -142,6 +142,44 @@ export function apply(ctx: Context, config: Config): void {
   }))
 
   tools.register(defineTool({
+    name: 'browser_scroll',
+    description: 'Scroll the current page by a pixel amount in a direction (default: 800px down). Use browser_snapshot or browser_screenshot to see the new viewport.',
+    parameters: {
+      direction: {
+        type: 'string',
+        enum: ['up', 'down', 'left', 'right'],
+        description: 'Direction to scroll. Defaults to down.',
+      },
+      amount: {
+        type: 'number',
+        description: 'Distance in CSS pixels. Defaults to 800.',
+      },
+    },
+    output: {
+      schema: {
+        type: 'object',
+        properties: {
+          url: { type: 'string', required: true },
+          scrollX: { type: 'number', required: true },
+          scrollY: { type: 'number', required: true },
+          atBoundary: { type: 'boolean', required: true },
+        },
+        additionalProperties: false,
+      },
+      render: (_args, value) => [{
+        type: 'text',
+        text: `Scrolled to (${value.scrollX}, ${value.scrollY}) at ${value.url}${value.atBoundary ? ' — reached the edge of the page' : ''}`,
+      }],
+    },
+    timeoutMs: 30_000,
+    async execute(args, exec) {
+      const page: BrowserPage = await browser.newPage(undefined, exec.signal)
+      const result = await page.scroll({ direction: args.direction, amount: args.amount }, exec.signal)
+      return { url: result.url, scrollX: result.scrollX, scrollY: result.scrollY, atBoundary: result.atBoundary }
+    },
+  }))
+
+  tools.register(defineTool({
     name: 'browser_back',
     description: 'Navigate the current page back in history.',
     parameters: {},

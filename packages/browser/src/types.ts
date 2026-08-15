@@ -46,6 +46,26 @@ export interface BrowserActionResult {
   detail?: string
 }
 
+/** Options for scrolling the current page. */
+export interface BrowserScrollOptions {
+  /** Direction to scroll; defaults to `down`. */
+  direction?: 'up' | 'down' | 'left' | 'right'
+  /** Distance in CSS pixels; defaults to 800. */
+  amount?: number
+}
+
+/** Result of scrolling the page. */
+export interface BrowserScrollResult {
+  url: string
+  ok: boolean
+  /** New horizontal scroll offset in CSS pixels. */
+  scrollX: number
+  /** New vertical scroll offset in CSS pixels. */
+  scrollY: number
+  /** True when the page could not move the full requested distance (reached an edge). */
+  atBoundary: boolean
+}
+
 /** A live page inside one browser context. */
 export interface BrowserPage {
   readonly id: string
@@ -56,6 +76,8 @@ export interface BrowserPage {
   screenshot(signal?: AbortSignal): Promise<BrowserScreenshot>
   click(ref: string, signal?: AbortSignal): Promise<BrowserActionResult>
   type(text: string, signal?: AbortSignal): Promise<BrowserActionResult>
+  /** Scroll the page by a pixel amount in a direction (main document scroll). */
+  scroll(options?: BrowserScrollOptions, signal?: AbortSignal): Promise<BrowserScrollResult>
   /** Run a raw JavaScript expression in the page. High-risk: expose only behind approval. */
   evaluate<T>(script: string, signal?: AbortSignal): Promise<T>
   back(signal?: AbortSignal): Promise<BrowserNavigateResult>
