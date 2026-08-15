@@ -16,7 +16,7 @@ test('provider navigates, snapshots, screenshots, and blocks private targets end
   const browser = ctx.browser
 
   try {
-    const page = await browser.newPage({ headless: true, profileDir: tempProfile() })
+    const page = await browser.newPage({ windowVisibility: 'headless', profileDir: tempProfile() })
 
     const result = await page.navigate('https://example.com/')
     assert.equal(result.statusCode, 200)
@@ -53,7 +53,7 @@ test('provider reuses the launch tab and recreates a page after close', async ()
   const browser = ctx.browser
 
   try {
-    const first = await browser.newPage({ headless: true, profileDir: tempProfile() })
+    const first = await browser.newPage({ windowVisibility: 'headless', profileDir: tempProfile() })
     const second = await browser.newPage()
     assert.equal(second.id, first.id, 'newPage should reuse the existing tab instead of opening a blank one')
 
@@ -72,7 +72,7 @@ test('provider scrolls the page and reports offsets plus boundary state', async 
   const browser = ctx.browser
 
   try {
-    const page = await browser.newPage({ headless: true, profileDir: tempProfile() })
+    const page = await browser.newPage({ windowVisibility: 'headless', profileDir: tempProfile() })
     await page.navigate('https://example.com/')
 
     // example.com is short — give the page real scrollable height.
@@ -162,7 +162,7 @@ test('refs from a snapshot survive a newPage() call, so ref clicks work across t
     // the shared refs recorded by snapshot() must still resolve when a
     // *different* wrapper clicks by ref (regression: refs used to live on
     // the wrapper instance and were lost between calls).
-    const snapper = await browser.newPage({ headless: true, profileDir: tempProfile() })
+    const snapper = await browser.newPage({ windowVisibility: 'headless', profileDir: tempProfile() })
     await snapper.navigate('https://example.com/')
     const snap = await snapper.snapshot()
     assert.ok(snap.refs.length > 0, 'snapshot should expose actionable refs')
