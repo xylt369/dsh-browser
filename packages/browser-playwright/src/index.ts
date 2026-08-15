@@ -18,13 +18,11 @@ import {
   type BrowserSnapshot,
 } from '@yeesy369/dsh-browser'
 import { createUrlGuard, type UrlGuard } from './url-guard.js'
-
-// Anti-detection: a custom automation User-Agent is a dead giveaway, so we let
-// Playwright use its realistic per-version Chrome UA and only strip automation
-// markers below. Serious anti-bot stacks may still fingerprint the TLS/browser
-// layer; see README for the honest limits.
-const CHROME_ARGS = ['--disable-blink-features=AutomationControlled']
-const INIT_SCRIPT = "Object.defineProperty(navigator, 'webdriver', { get: () => undefined });"
+import {
+  HIDDEN_WINDOW_ARGS,
+  STEALTH_INIT_SCRIPT,
+  STEALTH_LAUNCH_ARGS,
+} from './stealth.js'
 
 /**
  * Prefer a locally installed real browser — Microsoft Edge first (the default
@@ -70,8 +68,18 @@ function findBrowserChannel(): 'msedge' | 'chrome' | undefined {
 export const name = 'browser-playwright'
 
 export interface Config {
-  /** Run headless (server/CI); defaults to `false` (headed real browser). */
-  headless: boolean
+  /**
+   * Window mode:
+   * - `visible` — real browser window on the desktop (manual login / captcha possible).
+   * - `hidden` — real browser with the window minimized and parked offscreen (anti-bot friendliest, no visible window; needs a desktop session).
+   * - `headless` — no window at all (server/CI); weaker against aggressive bot detection.
+   * Defaults to `visible`.
+   */
+  windowVisibility?: 'visible' | 'hidden' | 'headless'
+  /** Apply lightweight anti-detection patches; defaults to `true`. */
+  stealth: boolean
+  /** @deprecated Use `windowVisibility: 'headless'` instead. */
+  headless?: boolean
   /** Prefer a real browser channel; auto-detect when omitted. */
   channel?: 'chrome' | 'msedge'
   /** Persistent profile directory (login state). */
@@ -79,7 +87,15 @@ export interface Config {
 }
 
 export const Config = Schema.object({
-  headless: Schema.boolean().default(false),
+  windowVisibility: Schema.union(['visible', 'hidden', 'headless']).description(
+    '窗口模式：visible = 弹出真实浏览器窗口，可直接手动登录、处理验证码（缺点是每次使用都会打扰桌面）；' +
+    'hidden = 真浏览器但窗口最小化并移到屏幕外，反爬最强且不打扰桌面（缺点：不能直接看窗口操作，登录需提前在 profile 里完成，且依赖桌面会话）；' +
+    'headless = 完全不弹窗，适合服务器/CI（缺点：即使开了 stealth 补丁，强风控仍可能识别，且无法手动登录）。默认 visible。',
+  ),
+  stealth: Schema.boolean().default(true).description(
+    '轻量反检测补丁：抹掉 navigator.webdriver、补全 plugins、伪装 WebGL 厂商等常见自动化指纹。默认开启；极少数站点可能因补丁行为异常，可关闭。',
+  ),
+  headless: Schema.boolean().description('已废弃：请改用 windowVisibility: "headless"。'),
   channel: Schema.union(['chrome', 'msedge']),
   profileDir: Schema.string(),
 })
@@ -99,7 +115,7 @@ class PlaywrightBrowserRuntime extends BrowserRuntime {
 
   constructor(ctx: Context, config: Partial<Config> = {}) {
     super(ctx)
-    this.config = { headless: false, ...config }
+    this.config = { stealth: true, ...config }
     this.guard = createUrlGuard({ allowPrivate: false })
     // Tie the browser lifecycle to this plugin's fiber: unloading closes the browser.
     ctx.effect(() => () => this.close())
@@ -151,18 +167,25 @@ class PlaywrightBrowserRuntime extends BrowserRuntime {
 
   private async ensureBrowser(options?: BrowserPageOptions): Promise<void> {
     if (this.context && (!this.browser || this.browser.isConnected())) return
-    // Real-user mode by default: headed, installed Edge (or Chrome), persistent
-    // profile. A visible window opens on the user's desktop; cookies and logins
-    // persist in the profile dir across sessions, and automation fingerprints
-    // are reduced so anti-bot sites (bilibili, zhihu, ...) treat us like a
-    // normal browser. Falls back to Playwright's bundled Chromium when no real
-    // browser is installed.
-    const headless = options?.headless ?? this.config.headless
+    // Window mode resolution: per-call override > provider config > legacy
+    // `headless` field (kept for profiles written before windowVisibility
+    // existed) > `visible`. Real-user mode by default: a real browser with a
+    // persistent profile, so cookies/logins persist across sessions and
+    // anti-bot sites treat us like a normal browser. Falls back to Playwright's
+    // bundled Chromium when no real browser is installed.
+    const visibility = options?.windowVisibility
+      ?? this.config.windowVisibility
+      ?? (this.config.headless ? 'headless' : 'visible')
+    const headless = visibility === 'headless'
     const channel = options?.channel ?? this.config.channel ?? findBrowserChannel()
     const profileDir = options?.profileDir ?? this.config.profileDir ?? join(homedir(), '.dsh', 'edge-profile')
+    const args = [
+      ...(this.config.stealth ? STEALTH_LAUNCH_ARGS : []),
+      ...(visibility === 'hidden' ? HIDDEN_WINDOW_ARGS : []),
+    ]
     const launchOptions = {
       headless,
-      args: CHROME_ARGS,
+      args,
       ...(channel ? { channel } : {}),
     }
     try {
@@ -170,7 +193,9 @@ class PlaywrightBrowserRuntime extends BrowserRuntime {
         viewport: options?.viewport,
         ...launchOptions,
       })
-      await this.context.addInitScript(INIT_SCRIPT)
+      if (this.config.stealth) {
+        await this.context.addInitScript(STEALTH_INIT_SCRIPT)
+      }
     } catch (cause) {
       throw new BrowserError(
         'BROWSER_LAUNCH_FAILED',

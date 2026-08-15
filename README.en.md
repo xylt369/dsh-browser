@@ -77,7 +77,7 @@ dsh plugin --profile web remove @yeesy369/dsh-browser-playwright @yeesy369/dsh-t
 | Package | Role | What it does |
 |---|---|---|
 | `@yeesy369/dsh-browser` | Service Definition | Declares the `ctx.browser` seam (`BrowserRuntime` / `BrowserPage`). |
-| `@yeesy369/dsh-browser-playwright` | Service Provider | Implements `ctx.browser` with Playwright: headed Edge, persistent profile, anti-detection, auto-relaunch. |
+| `@yeesy369/dsh-browser-playwright` | Service Provider | Implements `ctx.browser` with Playwright: three window modes (visible / hidden / headless), persistent profile, stealth patch, auto-relaunch. |
 | `@yeesy369/dsh-tool-browser` | Consumer | Registers `browser_navigate`, `browser_snapshot` (returns actionable refs), `browser_click` (by ref or CSS), `browser_type`, `browser_scroll`, `browser_back`, `browser_screenshot`, optional `browser_evaluate`. |
 | `@yeesy369/dsh-web-permission` | Hook | Gates web/browser tools via `tools/pre-execute` (allowlist / denylist / ask; `remember` persists grants). |
 
@@ -129,6 +129,26 @@ The same fields can be set at composition time in `cordis.patch.yml`; the `setti
 ```
 
 When enabled, tighten the permission gate — it is arbitrary code execution.
+
+### Window modes and stealth
+
+`browser-playwright`'s `windowVisibility` controls how the browser appears, and `stealth` toggles a lightweight anti-detection patch. Configure it in the dsh settings UI or directly in the profile:
+
+```yaml
+# ~/.dsh/profiles/web/cordis.patch.yml
+- id: browser-playwright
+  config:
+    windowVisibility: hidden   # visible / hidden / headless; default visible
+    stealth: true              # lightweight anti-detection patch; default on
+```
+
+| Mode | Pros | Cons |
+|---|---|---|
+| `visible` (default) | Real browser window — you can **log in manually, solve captchas**, see exactly what the model sees | Pops a window on your desktop on every use |
+| `hidden` | Real browser (best anti-bot posture) with the window minimized and parked offscreen — **no desktop clutter** | No visible window to operate manually; logins must be done in the profile beforehand; needs a desktop session (not for servers/CI) |
+| `headless` | No window at all; ideal for servers/CI | Even with `stealth`, aggressive bot stacks may still fingerprint automation; no manual login |
+
+The `stealth` patch is a dependency-free implementation (removes `navigator.webdriver`, fakes plugins, masks the WebGL vendor, fixes the notifications permission, … — see `packages/browser-playwright/src/stealth.ts`). It is on by default; disable it if a rare site misbehaves. For deeper CDP-level patching, layer `rebrowser-patches` on top yourself.
 
 ## Background
 

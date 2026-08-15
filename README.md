@@ -80,7 +80,7 @@ dsh plugin --profile web remove @yeesy369/dsh-browser-playwright @yeesy369/dsh-t
 | 包 | 角色 | 作用 |
 |---|---|---|
 | `@yeesy369/dsh-browser` | 服务定义 | 声明 `ctx.browser` 接口（`BrowserRuntime` / `BrowserPage`） |
-| `@yeesy369/dsh-browser-playwright` | 服务实现 | 用 Edge/Playwright 实现：有头模式 + 持久 profile + 反检测 + 窗口自动重开 |
+| `@yeesy369/dsh-browser-playwright` | 服务实现 | 用 Edge/Playwright 实现：三种窗口模式（弹窗/隐藏/headless）+ 持久 profile + 反检测补丁 + 窗口自动重开 |
 | `@yeesy369/dsh-tool-browser` | 消费者 | 注册 `browser_navigate` / `browser_snapshot`（返回可点击 ref）/ `browser_click`（按 ref 或 CSS）/ `browser_type` / `browser_scroll` / `browser_back` / `browser_screenshot`，可选 `browser_evaluate` |
 | `@yeesy369/dsh-web-permission` | 权限门 | `tools/pre-execute` 白名单 / 黑名单 / 询问（`remember` 可自动记住授权） |
 
@@ -124,6 +124,26 @@ web-permission:
 ```
 
 开启后请务必配合权限门收紧（`defaultAction: ask` 或加黑名单）——它是任意代码执行，风险最高。
+
+### 窗口模式与反检测
+
+`browser-playwright` 的 `windowVisibility` 决定浏览器以什么形态出现，`stealth` 决定是否套轻量反检测补丁。可以在 dsh 的设置界面里改，也可以直接写 profile 配置：
+
+```yaml
+# ~/.dsh/profiles/web/cordis.patch.yml
+- id: browser-playwright
+  config:
+    windowVisibility: hidden   # visible / hidden / headless，默认 visible
+    stealth: true              # 轻量反检测补丁，默认开启
+```
+
+| 模式 | 优点 | 缺点 |
+|---|---|---|
+| `visible`（默认） | 真浏览器窗口，可直接**手动登录、过验证码**，所见即所得 | 每次使用都弹窗口，打扰桌面 |
+| `hidden` | 真浏览器（反爬最强）但窗口最小化并移到屏幕外，**不打扰桌面** | 不能直接看窗口手动操作，登录需提前在 profile 里完成；依赖桌面会话，服务器/CI 不可用 |
+| `headless` | 完全不弹窗，适合服务器/CI | 即使开 `stealth`，强风控仍可能识别；无法手动登录 |
+
+`stealth` 补丁是无依赖的轻量实现（抹掉 `navigator.webdriver`、补全 plugins、伪装 WebGL 厂商、修正 notifications 权限等，见 `packages/browser-playwright/src/stealth.ts`）。默认开启；极少数站点可能因补丁行为异常，可关掉。需要更强的 CDP 层补丁时，可自行叠加 `rebrowser-patches`。
 
 ## 开发与发布
 

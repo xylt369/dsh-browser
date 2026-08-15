@@ -32,15 +32,20 @@ Per-session page isolation (rather than one process-wide page) is a planned foll
 
 ## Deployment configuration
 
-`dsh-browser-playwright` exposes a provider-level `Config` so headed vs headless, the browser channel, and the persistent profile are deployment choices:
+`dsh-browser-playwright` exposes a provider-level `Config` so the window mode, the browser channel, the persistent profile, and anti-detection are deployment choices:
 
 ```yaml
 - id: browser-playwright
   config:
-    headless: false        # true for server/CI (no desktop)
+    windowVisibility: visible   # visible / hidden / headless
+    stealth: true               # lightweight anti-detection patch
     channel: msedge        # or chrome; auto-detected when omitted
     profileDir: ~/.dsh/edge-profile
 ```
+
+Window mode resolution is per-call override (`newPage({ windowVisibility })`) > provider config > legacy `headless` field > `visible`. `headless` is deprecated but kept so profiles written before `windowVisibility` existed keep working.
+
+The `stealth` option wires launch args (`--disable-blink-features=AutomationControlled`) plus an init script (`packages/browser-playwright/src/stealth.ts`) that patches `navigator.webdriver`, plugins, the WebGL unmasked vendor strings, and the notifications permission — all conditional so a real browser keeps its genuine values. `hidden` mode additionally parks the window offscreen and minimized, keeping the browser fully real (best anti-bot posture) without desktop clutter; it requires a desktop session.
 
 ## Screenshot → attachment
 

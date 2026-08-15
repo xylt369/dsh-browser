@@ -107,3 +107,47 @@ test('provider scrolls the page and reports offsets plus boundary state', async 
     await fiber.dispose()
   }
 })
+
+test('provider launches headless with stealth and hides automation markers', async () => {
+  const ctx = new Context()
+  const fiber = await ctx.plugin(PlaywrightBrowserRuntime)
+  const browser = ctx.browser
+
+  try {
+    const page = await browser.newPage({ windowVisibility: 'headless', profileDir: tempProfile() })
+    await page.navigate('https://example.com/')
+
+    const webdriver = await page.evaluate<unknown>('navigator.webdriver')
+    assert.equal(webdriver, undefined, 'navigator.webdriver must be hidden by stealth')
+
+    const plugins = await page.evaluate<number>('navigator.plugins.length')
+    assert.ok(plugins > 0, 'stealth should expose plugins in headless mode')
+
+    const notification = await page.evaluate<{ state: string }>(
+      'navigator.permissions.query({ name: "notifications" })',
+    )
+    assert.equal(notification.state, 'prompt', 'headless should fake a promptable notifications permission')
+  } finally {
+    await fiber.dispose()
+  }
+})
+
+test('provider supports hidden-window mode (skipped on CI)', async (t) => {
+  if (process.env.CI) {
+    t.skip('hidden window mode needs a desktop session')
+    return
+  }
+  const ctx = new Context()
+  const fiber = await ctx.plugin(PlaywrightBrowserRuntime)
+  const browser = ctx.browser
+
+  try {
+    const page = await browser.newPage({ windowVisibility: 'hidden', profileDir: tempProfile() })
+    const result = await page.navigate('https://example.com/')
+    assert.equal(result.statusCode, 200, 'hidden-window browser should navigate like a normal browser')
+    const snap = await page.snapshot()
+    assert.ok(snap.text.toLowerCase().includes('example'))
+  } finally {
+    await fiber.dispose()
+  }
+})

@@ -4,7 +4,15 @@
 export interface BrowserPageOptions {
   /** Persistent profile directory for cross-session login state. */
   profileDir?: string
-  /** Run headless; providers may default to headless. */
+  /**
+   * Window mode:
+   * - `visible` — real browser window on the desktop (manual login / captcha possible).
+   * - `hidden` — real browser with the window minimized/offscreen (anti-bot friendliest, no visible window).
+   * - `headless` — no window at all; best for servers/CI, weaker against aggressive bot detection.
+   * Providers may default to `visible`.
+   */
+  windowVisibility?: 'visible' | 'hidden' | 'headless'
+  /** @deprecated Use `windowVisibility` instead. */
   headless?: boolean
   /** Preferred viewport size. */
   viewport?: { width: number; height: number }

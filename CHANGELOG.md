@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.0 (2026-08-15)
+
+- **Window modes**: `browser-playwright` now ships `windowVisibility: "visible" | "hidden" | "headless"` (default `visible`). `hidden` runs the real browser with the window minimized and parked offscreen — best anti-bot posture without desktop clutter — while `headless` stays the no-window choice for servers/CI. The legacy `headless: true` field still works and maps to `windowVisibility: "headless"`.
+- **Stealth patch**: new `stealth` config (default `true`) wires launch args plus a dependency-free init script that removes `navigator.webdriver`, fakes plugins in headless, masks SwiftShader/llvmpipe WebGL vendors, fixes the notifications permission, and more (`packages/browser-playwright/src/stealth.ts`).
+- **Seam 0.5.0**: `BrowserPageOptions.windowVisibility` added; `headless` marked deprecated.
+- **e2e**: headless+stealth marker checks (`navigator.webdriver`, plugins, notifications) and a hidden-window smoke test (skipped on CI, which has no desktop session).
+
 ## 0.5.0 (2026-08-15)
 
 - **`browser_scroll`**: new model-facing tool to page through long content (feeds, documents, comment threads). Defaults to 800px down; accepts `direction` (`up` / `down` / `left` / `right`) and `amount` (pixels). Returns the new `scrollX` / `scrollY` plus `atBoundary`, so the model can stop scrolling at the page edge instead of looping.
