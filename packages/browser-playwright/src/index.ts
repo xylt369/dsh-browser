@@ -112,6 +112,13 @@ class PlaywrightBrowserRuntime extends BrowserRuntime {
   private pageId: string | null = null
   private nextPageId = 0
   private readonly guard: UrlGuard
+  /**
+   * Accessibility refs from the most recent snapshot. Lives on the runtime
+   * (not on a page instance) because every tool call constructs a fresh
+   * PlaywrightBrowserPage via newPage(); an instance field would be empty
+   * by the time `click` runs, breaking ref-based clicking.
+   */
+  private readonly refs: { current: readonly string[] } = { current: [] }
 
   constructor(ctx: Context, config: Partial<Config> = {}) {
     super(ctx)
@@ -136,7 +143,7 @@ class PlaywrightBrowserRuntime extends BrowserRuntime {
       this.page = await this.acquirePage()
       this.pageId = `page-${this.nextPageId++}`
     }
-    return new PlaywrightBrowserPage(this.page, this.guard, this.pageId!)
+    return new PlaywrightBrowserPage(this.page, this.guard, this.pageId!, this.refs)
   }
 
   /**
@@ -207,12 +214,12 @@ class PlaywrightBrowserRuntime extends BrowserRuntime {
 }
 
 class PlaywrightBrowserPage implements BrowserPage {
-  private lastRefs: readonly string[] = []
-
   constructor(
     private readonly page: Page,
     private readonly guard: UrlGuard,
     readonly id: string,
+    /** Shared with every page instance so refs survive tool-call boundaries. */
+    private readonly refs: { current: readonly string[] },
   ) {}
 
   url(): string | null {
@@ -235,8 +242,8 @@ class PlaywrightBrowserPage implements BrowserPage {
 
   async snapshot(_signal?: AbortSignal): Promise<BrowserSnapshot> {
     const text = await this.readSnapshot()
-    this.lastRefs = extractAriaRefs(text)
-    return { url: this.page.url(), text, refs: this.lastRefs }
+    this.refs.current = extractAriaRefs(text)
+    return { url: this.page.url(), text, refs: this.refs.current }
   }
 
   async screenshot(_signal?: AbortSignal): Promise<BrowserScreenshot> {
@@ -251,7 +258,7 @@ class PlaywrightBrowserPage implements BrowserPage {
   }
 
   async click(ref: string, _signal?: AbortSignal): Promise<BrowserActionResult> {
-    const useAriaRef = this.lastRefs.includes(ref) || /^e\d+$/.test(ref)
+    const useAriaRef = this.refs.current.includes(ref) || isAriaRefFormat(ref)
     const locator = useAriaRef ? this.page.locator(`aria-ref=${ref}`) : this.page.locator(ref)
     await locator.click({ timeout: 30_000 })
     return { url: this.page.url(), ok: true }
@@ -321,6 +328,18 @@ export function extractAriaRefs(text: string): string[] {
   let match: RegExpExecArray | null
   while ((match = re.exec(text)) !== null) refs.add(match[1])
   return [...refs]
+}
+
+/**
+ * Whether a string looks like an aria-snapshot ref (letter prefix + digits,
+ * e.g. `e1` on older Playwright builds, `f29e86` on newer ones) as opposed
+ * to a CSS selector such as `text=Save` or `input[name=q]`. Click routes
+ * refs to `aria-ref=` lookup and everything else to CSS, so this guard must
+ * never swallow a real selector: requiring at least one digit keeps plain
+ * tag names (`div`, `button`) out of the ref path.
+ */
+export function isAriaRefFormat(ref: string): boolean {
+  return /^[a-z][a-z0-9]*\d+[a-z0-9]*$/i.test(ref)
 }
 
 export { PlaywrightBrowserRuntime }
