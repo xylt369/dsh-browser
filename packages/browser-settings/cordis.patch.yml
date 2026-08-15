@@ -1,0 +1,4 @@
+# dsh-browser-settings bundle patch: mounts the settings companion plugin.
+- insert:
+    - id: dsh-browser-settings
+      name: '@yeesy369/dsh-browser-settings'

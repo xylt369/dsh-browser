@@ -1,5 +1,14 @@
 # Changelog
 
+## dsh-browser-settings 0.1.1 (2026-08-15)
+
+- **New companion package** `@yeesy369/dsh-browser-settings`: a DSH sidebar panel that makes
+  `browser-playwright` configurable from the UI (window mode `visible` / `hidden` / `headless`
+  and the `stealth` toggle). The node half declares `inject: ['webServer']` so the config route
+  registers after the web server is ready, then rewrites the `browser-playwright` entry in the
+  profile's `cordis.patch.yml`; DSH's HMR hot-applies the change. The web half registers a
+  `sidebar.footer.action` entry and a `shell.overlay` panel.
+
 ## 0.6.1 (2026-08-15)
 
 - **Fix ref-based clicking** (`browser-playwright`): snapshot refs now live on the runtime instead of the per-call page instance, so `browser_click(ref=...)` works across tool calls; ref detection also accepts the current Playwright ref format (e.g. `f29e86`) alongside the legacy `e1` style (`isAriaRefFormat`). Previously ref clicks could time out after 30s. Closes #1.
